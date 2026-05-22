@@ -1,0 +1,12 @@
+import sec, { SecludedAdapter } from './adapter/index.js';
+import sec_ws from './adapter/WebSocket.js';
+Bot.adapter.push(sec.adapter);
+logger.mark(`===============`);
+logger.mark(`${logger.blue('[Secluded-Adapter]')} author 堀学长 ！！！`);
+logger.mark(`${logger.blue('[Secluded-Adapter]')} version 0.0.1`);
+logger.mark(`${logger.blue(`[Secluded-Adapter]`)} repository https://gitee.com/Milchstraber/Secluded-Plugin`);
+logger.mark(`===============`);
+await sec_ws.load();
+let apps = {};
+apps[SecludedAdapter.name] = SecludedAdapter;
+export { apps };

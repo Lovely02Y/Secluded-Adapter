@@ -1,0 +1,32 @@
+{
+  "name": "secluded-plugin",
+  "type": "module",
+  "author": "堀学长",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "form-data": "^4.0.1",
+    "probe-image-size": "^7.2.3",
+    "protobufjs": "^7.4.0",
+    "image-size": "^1.2.0",
+    "silk-wasm": "^3.4.0",
+    "zlib": "^1.0.5",
+    "ws": "^8.18.3"
+  },
+  "scripts": {
+    "lint": "prettier --check **/*.js",
+    "lint:fix": "prettier --write **/*.js",
+    "fix": "prettier --write **/*.js"
+  },
+  "prettier": {
+    "semi": true,
+    "endOfLine": "lf",
+    "useTabs": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "printWidth": 800,
+    "bracketSameLine": true
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2"
+  }
+}
