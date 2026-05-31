@@ -1984,6 +1984,8 @@ const adapter = new (class SecludedAdapter {
 
   async connect(id) {
     if (Bot.uin.includes(id)) return false;
+    if (!this.token) this.token = await this.calculateToken(config.http_secretToken);
+    const deviceinfo = await this.Getdeviceinfo(Number(id))
     Bot[id] = {
       adapter: this,
       sig: {
@@ -2002,6 +2004,7 @@ const adapter = new (class SecludedAdapter {
           time: 0,
         },
       },
+      device: deviceinfo?.data || deviceinfo,
       stat: {
         start_time: Math.floor(Date.now() / 1000),
         recv_msg_cnt: 0,
@@ -2041,6 +2044,7 @@ const adapter = new (class SecludedAdapter {
       qzone_event: new Map(),
       uin2uid: new Map(),
 
+      getPSkey: this.GetPSkey.bind(this, id),
       GetClientKey: this.GetClientKey.bind(this, id),
       setAvatar: this.setBotAvatar.bind(this, id),
 
@@ -2114,6 +2118,7 @@ const adapter = new (class SecludedAdapter {
         return this.request_list;
       },
     };
+
     if (!Bot.uin.includes(id)) Bot.uin.push(id);
     Bot[id].sdk = Bot[id];
     await this.FriendOperation(id); // 加载好友
@@ -2197,6 +2202,7 @@ const adapter = new (class SecludedAdapter {
         domain: i[1],
         p_skey: pskey,
         pskey_time: expireTime,
+        expire_time: Math.floor(expireTime)
       };
       Bot[id].sig.pskeys.set(i[1], pskey_data);
       pskeys_cache.push(pskey_data);
@@ -2318,6 +2324,15 @@ const adapter = new (class SecludedAdapter {
       value: true,
     };
     const response = await axios.post(config.http_url + '/uin-list-set-switch', params);
+    return response.data;
+  }
+
+  async Getdeviceinfo(account) {
+    const params = {
+      sign: this.token,
+      account,
+    };
+    const response = await axios.post(config.http_url + '/device-info-pull', params);
     return response.data;
   }
 
