@@ -109,8 +109,8 @@ const adapter = new (class SecludedAdapter {
     this.queue = []; // 等待队列
   }
 
-  get Proto () {
-    return pb
+  get Proto() {
+    return pb;
   }
 
   async Http_Sec_Send(data) {
@@ -1985,7 +1985,7 @@ const adapter = new (class SecludedAdapter {
   async connect(id) {
     if (Bot.uin.includes(id)) return false;
     if (!this.token) this.token = await this.calculateToken(config.http_secretToken);
-    const deviceinfo = await this.Getdeviceinfo(Number(id))
+    const deviceinfo = await this.Getdeviceinfo(Number(id));
     Bot[id] = {
       adapter: this,
       sig: {
@@ -2044,6 +2044,7 @@ const adapter = new (class SecludedAdapter {
       qzone_event: new Map(),
       uin2uid: new Map(),
 
+      sendMsgtoPhone: this.sendMsgtoPhone.bind(this, id),
       getPSkey: this.GetPSkey.bind(this, id),
       GetClientKey: this.GetClientKey.bind(this, id),
       setAvatar: this.setBotAvatar.bind(this, id),
@@ -2202,7 +2203,7 @@ const adapter = new (class SecludedAdapter {
         domain: i[1],
         p_skey: pskey,
         pskey_time: expireTime,
-        expire_time: Math.floor(expireTime)
+        expire_time: Math.floor(expireTime),
       };
       Bot[id].sig.pskeys.set(i[1], pskey_data);
       pskeys_cache.push(pskey_data);
@@ -2427,7 +2428,7 @@ const adapter = new (class SecludedAdapter {
   async makeMsg(id, msg, opts) {
     if (!Array.isArray(msg)) msg = [msg];
     const messages = [];
-    const flash_msg = []
+    const flash_msg = [];
     const forward = [];
     for (let message of msg) {
       if (typeof message === 'object')
@@ -2474,7 +2475,7 @@ const adapter = new (class SecludedAdapter {
             image: segment.image(message?.image || `https://q.qlogo.cn/g?b=qq&s=0&nk=${id}`),
           };
           flash_msg.push(await UploadflashTransfer(id, message.files, options));
-        break;
+          break;
         case 'long_msg':
           if (msg.length > 1) continue;
         default:
@@ -2551,7 +2552,7 @@ const adapter = new (class SecludedAdapter {
       }
 
       const messages = await this.makeMsg(id, message, opts);
-      if (messages.length === 0) return true
+      if (messages.length === 0) return true;
       const { rich, brief } = await this._preprocess(id, messages, opts);
       nodes.push({
         1: {
@@ -2722,9 +2723,82 @@ const adapter = new (class SecludedAdapter {
     }
   }
 
+  async sendMsgtoPhone(id, msg) {
+    const rand = RandomUInt();
+    const rets = { message_id: [], data: [], error: [] };
+    let message_id,
+      seq = this.seq++,
+      time;
+    const packet = {
+      1: {
+        15: {
+          2: 7,
+          3: {
+            1: {
+              1: 1001,
+              2: 0,
+              10: 2,
+            },
+            3: {
+              1: 1,
+              2: 1,
+              10: 1,
+            },
+          },
+          8: Bot[id].uid,
+        },
+      },
+      2: {
+        1: 1,
+        2: 0,
+        3: 0,
+      },
+      3: {
+        2: {
+          1: 4,
+          2: {
+            1: 1,
+            2: 1,
+            3: 1001,
+            4: 0,
+            9: 1,
+            10: 2,
+          },
+          6: {
+            1: Math.floor(Date.now() / 1000),
+            2: 1,
+            3: 0,
+            4: 1,
+            5: {
+              1: {
+                1: 1,
+                2: String(msg),
+              },
+            },
+          },
+        },
+      },
+      4: seq,
+      5: rand,
+    };
+    const rsp = await this.sendUni(id, 'MessageSvc.PbSendMsg', pb.encode(packet), false);
+    if (rsp[1] !== 0) {
+      Bot.makeLog('error', `failed to send: [Private: ${id}] ${rsp[2] || '私聊消息发送失败，可能被风控'}(code:${rsp[1]})`, id);
+      rets.error.push({ rand, code: rsp[1], message: rsp[2] || '私聊消息发送失败，可能被风控' });
+      return rets;
+    }
+    time = rsp[3];
+    message_id = genDmMessageId(id, seq, rand, time, 1, rsp[14]);
+    rets.message_id.push(message_id);
+    const messageRet = { message_id, seq, rand, time, subSeq: rsp[14] };
+    rets.data.push(messageRet);
+    Bot.makeLog('info', `succeed to send: [Private(${id})] ` + msg, id);
+    return rets;
+  }
+
   async sendMsg(id, msg, opts = {}) {
     const messages = await this.makeMsg(id, msg, opts);
-    if (messages.length === 0) return true
+    if (messages.length === 0) return true;
     const { rich, brief } = await this._preprocess(id, messages, opts);
     const rand = RandomUInt();
     let message_id,
@@ -2745,7 +2819,7 @@ const adapter = new (class SecludedAdapter {
       ...(opts.dm ? { 6: { 1: Math.floor(Date.now() / 1000) } } : {}),
     };
     const rsp = await this.sendUni(id, 'MessageSvc.PbSendMsg', pb.encode(packet), false);
-    const rets = { message_id: [], data: [], error: [] }
+    const rets = { message_id: [], data: [], error: [] };
     if (opts.dm) {
       if (rsp[1] !== 0 || rsp[14] === 0) {
         Bot.makeLog('error', `failed to send: [Private: ${opts.id}] ${rsp[2] || '私聊消息发送失败，可能被风控'}(code:${rsp[1]})`, id);
@@ -2754,9 +2828,9 @@ const adapter = new (class SecludedAdapter {
       }
       time = rsp[3];
       message_id = genDmMessageId(opts.user_id, seq, rand, time, 1, rsp[14]);
-      rets.message_id.push(message_id)
+      rets.message_id.push(message_id);
       const messageRet = { message_id, seq, rand, time, subSeq: rsp[14] };
-      rets.data.push(messageRet)
+      rets.data.push(messageRet);
       Bot.makeLog('info', `succeed to send: [Private(${opts.user_id})] ` + brief, id);
       return rets;
     } else {
@@ -2767,9 +2841,9 @@ const adapter = new (class SecludedAdapter {
       }
       if (rsp.checkTag(11, 12) && rsp[11] > 0) ((seq = rsp[11]), (time = rsp[3]));
       message_id = genGroupMessageId(opts.group_id, id, rsp[11], rand, rsp[3], 1, id);
-      rets.message_id.push(message_id)
+      rets.message_id.push(message_id);
       const messageRet = { message_id, seq, rand, time };
-      rets.data.push(messageRet)
+      rets.data.push(messageRet);
       Bot.makeLog('info', `succeed to send: [Group(${opts.group_id})] ` + brief, id);
       return rets;
     }
