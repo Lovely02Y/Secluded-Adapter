@@ -27,7 +27,11 @@ class WebSocketClient {
    */
   init() {
     try {
-      this.sec_ws = new Sec_WebSocket(this.ws_url);
+      this.sec_ws = new Sec_WebSocket(this.ws_url, {
+        headers: {
+          Authorization: `Bearer ${this.config.ws_secretToken}`,
+        },
+      });
       this.sec_ws.on('open', () => this.onOpen());
       this.sec_ws.on('message', (data) => this.onMessage(data));
       this.sec_ws.on('error', (error) => this.onError(error));
