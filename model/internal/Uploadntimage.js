@@ -1,5 +1,6 @@
 import { highwayUpload } from './highway.js';
 import common, { calculateSha1StreamBytes, _saveFileToTmpDir } from './Uploadntvideo.js';
+import { flashTransferUpload } from './FlashTransfer.js';
 import probe from 'probe-image-size';
 import crypto from 'crypto';
 import pb from '../protobuf/index.js';
@@ -18,7 +19,6 @@ export function initializeSegment() {
 }
 
 initializeSegment();
-
 
 const TYPE = {
   jpg: 1000,
@@ -135,8 +135,10 @@ export const uploadNTImages = async (id, _image, opts) => {
 
     resp1 = await Bot[id].sendOidbSvcTrpcTcp(`OidbSvcTrpcTcp.0x11c${opts.dm ? '5' : '4'}_100`, proto);
     const sha1Stream = await calculateSha1StreamBytes(path);
-    const readable = common.Getreadable(path);
+    //const readable = common.Getreadable(path);
+
     if (resp1[2]?.[1]) {
+      /*
       const params = {
         uin: id,
         apk: {
@@ -175,6 +177,10 @@ export const uploadNTImages = async (id, _image, opts) => {
         },
         params
       );
+      */
+     const ukey = resp1[2]?.[1]
+     const appid = opts.isGroup ? 1407 : 1406
+     await flashTransferUpload(file, ukey, appid);
     }
   } catch (e) {
     logger.warn('图片上传失败：' + e);

@@ -453,13 +453,13 @@ function getFileSubTypeByBuffer(buffer) {
       test: (buf) => {
         if (buf.length < 3) return false;
         if (buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return true;
-        if (buf[0] === 0xFF && (buf[1] & 0xF0) === 0xF0) {
+        if (buf[0] === 0xff && (buf[1] & 0xf0) === 0xf0) {
           const layer = (buf[1] >> 1) & 0x03;
           const version = (buf[1] >> 3) & 0x03;
           return layer !== 0 && version !== 3;
         }
         return false;
-      }
+      },
     },
     // 3. 视频 (2)
     {

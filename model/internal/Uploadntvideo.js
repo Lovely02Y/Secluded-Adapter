@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
 import { highwayUpload } from './highway.js';
+import { flashTransferUpload } from './FlashTransfer.js';
 import { pipeline } from 'stream/promises';
 import crypto from 'crypto';
 import axios from 'axios';
@@ -346,8 +347,10 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
 
   const [md5video, sha1video] = await common.fileHash(file);
   const [md5thumb, sha1thumb] = await common.fileHash(thumb);
-  const readable = fs.createReadStream(file);
-  const readable2 = fs.createReadStream(thumb);
+ // const readable = fs.createReadStream(file);
+ // const readable2 = fs.createReadStream(thumb);
+  const buf = await Bot.Buffer(file);
+  const buf2 = await Bot.Buffer(thumb);
   const videosize = (await fs.promises.stat(file)).size;
   const thumbsize = (await fs.promises.stat(thumb)).size;
 
@@ -387,6 +390,7 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
   let sha1 = await calculateSha1StreamBytes(file);
 
   if (resp1[2]?.[1]) {
+    /*
     const ext = pb.encode({
       1: video_fid,
       2: resp1[2]?.[1] || '',
@@ -415,9 +419,14 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
       },
       params
     );
+    */
+    const ukey = resp1[2]?.[1]
+    const appid = opts.isGroup ? 1415 : 1413
+    await flashTransferUpload(buf, ukey, appid);
   }
 
   if (resp1[2][10]?.[2]) {
+    /*
     const ext2 = pb.encode({
       1: thumb_fid,
       2: resp1[2][10]?.[2] || '',
@@ -446,6 +455,10 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
       },
       params
     );
+    */
+    const ukey = resp1[2][10]?.[2]
+    const appid = opts.isGroup ? 1416 : 1414
+    await flashTransferUpload(buf2, ukey, appid);
   }
   fs.unlink(thumb, NOOP);
   if (temp) fs.unlink(file, NOOP);

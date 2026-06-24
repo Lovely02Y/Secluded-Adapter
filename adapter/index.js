@@ -26,7 +26,6 @@ import { Image } from '../model/image.js';
 import schedule from 'node-schedule';
 import { segment } from '../model/elements.js';
 import { UploadflashTransfer } from '../model/internal/UploardFlashTransfer.js';
-
 const RandomUInt = () => crypto.randomBytes(4).readUInt32BE();
 const gunzip = promisify(_gunzip);
 const gzip = promisify(_gzip);
@@ -43,6 +42,7 @@ const { config, configSave } = await makeConfig(
     ws_secretToken: 'SecretToken',
     token: [],
     maxConcurrent: 6,
+    enableRedBagQQ: [],
   },
   {
     tips: ['欢迎使用 TRSS-Yunzai Secluded Plugin ! 作者：堀学长', '参考：https://gitee.com/Milchstraber/Secluded-Plugin'],
@@ -133,7 +133,7 @@ const adapter = new (class SecludedAdapter {
         ],
       };
     const rsp = await this.Http_Sec_Send(data.data);
-    const payload = rsp.Dat;
+    const payload = rsp?.Dat || rsp?.[0]?.Dat;
     if (raw) return payload;
     if (isToJson) return pb.decode(payload)?.toJSON();
     return pb.decode(payload);
@@ -2380,7 +2380,7 @@ const adapter = new (class SecludedAdapter {
         this.handleOicqMsg(event.data);
         break;
       case 'Heartbeat':
-        this.sendHeartbeat(event);
+        //this.sendHeartbeat(event);
         break;
       default:
         Bot.makeLog('info', ['未知事件', event], 'Secluded');

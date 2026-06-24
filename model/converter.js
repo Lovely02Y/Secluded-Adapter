@@ -18,6 +18,7 @@ const { config, configSave } = await makeConfig(
     ws_secretToken: 'SecretToken',
     token: [],
     maxConcurrent: 6,
+    enableRedBagQQ: [],
   },
   {
     tips: ['欢迎使用 TRSS-Yunzai Secluded Plugin ! 作者：堀学长', '参考：https://gitee.com/Milchstraber/Secluded-Plugin'],

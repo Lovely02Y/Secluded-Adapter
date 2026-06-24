@@ -261,6 +261,7 @@ function decodeBuf(buf) {
 }
 
 function decodeCompress(buf) {
+  if (!buf || buf.length < 2) return false;
   let rsp = {
     type: '',
     data: '',

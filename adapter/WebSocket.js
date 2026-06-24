@@ -1,7 +1,7 @@
 import { default as Sec_WebSocket } from 'ws';
 import sec from './index.js';
 import crypto from 'crypto';
-
+let hasws = false
 class WebSocketClient {
   constructor() {
     this.config = sec.config;
@@ -27,6 +27,8 @@ class WebSocketClient {
    */
   init() {
     try {
+      if (hasws) return false
+      hasws = true
       this.sec_ws = new Sec_WebSocket(this.ws_url, {
         headers: {
           Authorization: `Bearer ${this.config.ws_secretToken}`,
@@ -41,6 +43,10 @@ class WebSocketClient {
       Bot.makeLog('error', [`[Secluded] WebSocket 连接失败: ${error}`], 'Secluded');
       this.scheduleReconnect();
     }
+  }
+
+  async getws() {
+    return this.sec_ws
   }
 
   /**

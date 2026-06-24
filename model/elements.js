@@ -2,7 +2,7 @@ export const ChainElemTypes = ['flash_msg', 'quote', 'node', 'text', 'face', 'sf
 
 /** 用于构造消息元素 */
 export const segment = {
-  flash_msg: (files, send = true, image, flash_name) =>({
+  flash_msg: (files, send = true, image, flash_name) => ({
     type: 'flash_msg',
     files,
     send,
