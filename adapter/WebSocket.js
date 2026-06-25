@@ -29,6 +29,9 @@ class WebSocketClient {
     try {
       if (hasws) return false
       hasws = true
+      setTimeout(async() => {
+        hasws = false
+      }, 5000);
       this.sec_ws = new Sec_WebSocket(this.ws_url, {
         headers: {
           Authorization: `Bearer ${this.config.ws_secretToken}`,
