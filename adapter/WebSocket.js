@@ -1,7 +1,7 @@
 import { default as Sec_WebSocket } from 'ws';
 import sec from './index.js';
 import crypto from 'crypto';
-let hasws = false
+let hasws = false;
 class WebSocketClient {
   constructor() {
     this.config = sec.config;
@@ -27,10 +27,10 @@ class WebSocketClient {
    */
   init() {
     try {
-      if (hasws) return false
-      hasws = true
-      setTimeout(async() => {
-        hasws = false
+      if (hasws) return false;
+      hasws = true;
+      setTimeout(async () => {
+        hasws = false;
       }, 1500);
       this.sec_ws = new Sec_WebSocket(this.ws_url, {
         headers: {
@@ -49,7 +49,7 @@ class WebSocketClient {
   }
 
   async getws() {
-    return this.sec_ws
+    return this.sec_ws;
   }
 
   /**
@@ -57,6 +57,7 @@ class WebSocketClient {
    */
   async onOpen() {
     Bot.makeLog('info', [`[Secluded]`, `WebSocket连接已建立`], 'Secluded');
+    /*
     const authMessage = {
       cmd: 'SyncOicq',
       rsp: true,
@@ -77,6 +78,7 @@ class WebSocketClient {
         })
         .map((item) => sec.adapter.connect(Number(item)))
     );
+    */
     this.reconnectAttempts = 0;
   }
 
@@ -101,6 +103,17 @@ class WebSocketClient {
         if (cache) cache.resolve(parsedData);
         return;
       }
+      if (parsedData?.cmd === 'Sync' && parsedData?.data?.list) {
+        const list = parsedData?.data?.list;
+        Promise.all(
+          list
+            .filter((item) => {
+              const num = Number(item);
+              return num !== 0 && num !== 1000000;
+            })
+            .map((item) => sec.adapter.connect(Number(item)))
+        );
+      }
       sec.adapter.handleMessage(parsedData);
     } catch (error) {
       Bot.makeLog('error', [`[Secluded] 消息解析错误`, error], 'Secluded');
@@ -119,7 +132,7 @@ class WebSocketClient {
    */
   onClose(code, reason) {
     Bot.makeLog('warn', [`[Secluded] WebSocket连接关闭`, `代码: ${code}, 原因: ${reason}`], 'Secluded');
-    if (code !== 1000/* && this.reconnectAttempts < this.maxReconnectAttempts*/) {
+    if (code !== 1000 /* && this.reconnectAttempts < this.maxReconnectAttempts*/) {
       this.reconnect();
     }
   }
