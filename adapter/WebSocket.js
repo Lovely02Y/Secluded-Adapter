@@ -113,7 +113,9 @@ class WebSocketClient {
             })
             .map((item) => sec.adapter.connect(Number(item)))
         );
+        return;
       }
+      
       sec.adapter.handleMessage(parsedData);
     } catch (error) {
       Bot.makeLog('error', [`[Secluded] 消息解析错误`, error], 'Secluded');
