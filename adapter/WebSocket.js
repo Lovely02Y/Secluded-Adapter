@@ -31,7 +31,7 @@ class WebSocketClient {
       hasws = true
       setTimeout(async() => {
         hasws = false
-      }, 5000);
+      }, 1500);
       this.sec_ws = new Sec_WebSocket(this.ws_url, {
         headers: {
           Authorization: `Bearer ${this.config.ws_secretToken}`,
@@ -119,7 +119,7 @@ class WebSocketClient {
    */
   onClose(code, reason) {
     Bot.makeLog('warn', [`[Secluded] WebSocket连接关闭`, `代码: ${code}, 原因: ${reason}`], 'Secluded');
-    if (code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+    if (code !== 1000/* && this.reconnectAttempts < this.maxReconnectAttempts*/) {
       this.reconnect();
     }
   }
