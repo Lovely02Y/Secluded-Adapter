@@ -44,10 +44,11 @@ function RandomInt(num1, num2) {
 }
 
 function PB_RESERVER() {
+  const bubble_id = config?.bot?.bubble_rand ? RandomInt(2000000, 2025658) : config?.bot?.bubble_id || 0;
   const PB_RESERVER = {
     37: {
-      16: config?.bot?.bubble_rand ? RandomInt(2000000, 2025658) : config?.bot?.bubble_id || 0,
-      17: 0,
+      16: bubble_id,
+      17: bubble_id,
       19: {
         15: config?.bot?.font_id || 0,
         31: 0,
@@ -55,7 +56,13 @@ function PB_RESERVER() {
       },
     },
   };
-  return PB_RESERVER;
+  const PB_Bubble_RESERVER = {
+    9: {
+      1: bubble_id,
+      8: 0,
+    },
+  };
+  return { PB_RESERVER, PB_Bubble_RESERVER };
 }
 
 let faces;
@@ -131,7 +138,11 @@ export class Converter {
       this._convert(elem);
     }
     if (!this.elems.length && !this.rich[4]) throw new Error('empty message');
-    if (!this.is_longMsg) this.elems.push(PB_RESERVER());
+    if (!this.is_longMsg) {
+      const RESERVER = PB_RESERVER();
+      this.elems.push(RESERVER.PB_RESERVER);
+      this.elems.push(RESERVER.PB_Bubble_RESERVER);
+    }
     if (!this.ext?.dm && config.bot?.replyface) this.elems.push(PB_FACE_RESERVER);
   }
 
@@ -198,7 +209,7 @@ export class Converter {
       var q = Number(qq),
         flag = 0,
         display = text || String(qq);
-      const member = this.ext?.mlist?.get(q);
+      const member = this.ext?.mlist?.get(q) || Bot[this.client]?.uin2uid?.get(q);
       uid = member?.user_uid || '';
       if (!text) {
         display = member?.card || member?.nickname || display;
@@ -686,10 +697,12 @@ export class Converter {
   quote(source) {
     const elems = new Converter(this.client, source.message || '', this.ext).elems;
     const tmp = this.brief;
+    /*
     if (!this.ext?.dm) {
       this.at({ type: 'at', qq: source.user_id });
       this.elems.unshift(this.elems.pop());
     }
+    */
     this.elems.unshift({
       45: {
         1: [source.seq],

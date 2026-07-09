@@ -336,7 +336,7 @@ export function parse(client, rich, uin) {
 /** 消息解析器 */
 export class Parser {
   constructor(client, rich, uin) {
-    this.client = Bot[client]?.sig || {};
+    this.client = client;
     this.uin = uin;
     this.message = [];
     this.brief = '';
@@ -821,7 +821,7 @@ export class Parser {
       };
       if (type === 'image') elem.asface = (proto[2][1]?.[1] || 0) > 0;
       elem.file = buildImageFileParam(elem.md5, elem.sha1, elem.size, elem.width, elem.height, proto[1][1][1][5][2]);
-      const rkey = this.client?.rkey_info?.[businessType]?.rkey;
+      const rkey = Bot[this.client]?.sig?.rkey_info?.[businessType]?.rkey;
       if (rkey?.length) {
         this.newImg = true;
         elem.url = `https://${proto[1][2][3]}${proto[1][2][1]}${rkey}${proto[1][2][2][1] || '&spec=0'}`;
@@ -840,7 +840,7 @@ export class Parser {
     let dm = type === 'flash' ? (proto[1] ? true : false) : source_type === 8 ? false : true;
     let md5 = proto[dm ? 7 : 13].toHex();
     let path = (proto[dm ? 29 : 34]?.[30] || '').toString();
-    const rkey = this.client?.rkey_info?.[dm ? 10 : 20]?.rkey;
+    const rkey = Bot[this.client]?.sig?.rkey_info?.[dm ? 10 : 20]?.rkey;
     if (this.imgprefix[md5] && path?.length) {
       const origin = this.imgprefix[md5].url?.length ? new URL(this.imgprefix[md5].url).origin : '';
       elem = {
