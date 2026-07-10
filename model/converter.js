@@ -59,7 +59,7 @@ function PB_RESERVER() {
   const PB_Bubble_RESERVER = {
     9: {
       1: bubble_id,
-      8: 0,
+      12: config?.bot?.font_id || 0,
     },
   };
   return { PB_RESERVER, PB_Bubble_RESERVER };
@@ -697,12 +697,10 @@ export class Converter {
   quote(source) {
     const elems = new Converter(this.client, source.message || '', this.ext).elems;
     const tmp = this.brief;
-    /*
     if (!this.ext?.dm) {
       this.at({ type: 'at', qq: source.user_id });
       this.elems.unshift(this.elems.pop());
     }
-    */
     this.elems.unshift({
       45: {
         1: [source.seq],
