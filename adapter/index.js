@@ -2104,7 +2104,7 @@ const adapter = new (class SecludedAdapter {
         version: this.version,
       },
       apk: {
-        subid: 537320212,
+        subid: deviceinfo?.data?.subAppid || deviceinfo?.subAppid || 537320212,
         version: this.version,
         display: this.name,
         ver: this.version,
