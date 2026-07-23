@@ -26,6 +26,11 @@ TRSS-Yunzai Secluded Bot 适配器插件
 3. 进入【开关管理】页面
 4. 找到并开启【调试模式】选项
 5. 点击保存完成配置
+Or
+安装词库: [自动Debug词库.txt](./help/自动Debug词库.txt)
+Linux词库放置路径: `/root/sec/lexicon/自动Debug词库.txt`
+Windows同理: `c://..//sec//lexicon//自动Debug词库.txt`
+Android直接打开Secluded网页导入词库
 
 额外环境部署要求：
 服务器必须提前安装ffmpeg工具，缺少该依赖将无法解析、处理语音消息；安装完成后需配置系统环境变量，确保全局可调用ffmpeg。
