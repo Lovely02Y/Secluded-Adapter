@@ -26,7 +26,10 @@ TRSS-Yunzai Secluded Bot 适配器插件
 3. 进入【开关管理】页面
 4. 找到并开启【调试模式】选项
 5. 点击保存完成配置
+
+
 Or
+
 安装词库: [自动Debug词库.txt](./help/自动Debug词库.txt)
 Linux词库放置路径: `/root/sec/lexicon/自动Debug词库.txt`
 Windows同理: `c://..//sec//lexicon//自动Debug词库.txt`
