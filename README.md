@@ -31,8 +31,11 @@ TRSS-Yunzai Secluded Bot 适配器插件
 Or
 
 安装词库: [自动Debug词库.txt](./help/自动Debug词库.txt)
+
 Linux词库放置路径: `/root/sec/lexicon/自动Debug词库.txt`
+
 Windows同理: `c://..//sec//lexicon//自动Debug词库.txt`
+
 Android直接打开Secluded网页导入词库
 
 额外环境部署要求：
