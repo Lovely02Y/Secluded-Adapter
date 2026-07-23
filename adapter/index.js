@@ -26,6 +26,7 @@ import { Image } from '../model/image.js';
 import schedule from 'node-schedule';
 import { segment } from '../model/elements.js';
 import { UploadflashTransfer } from '../model/internal/UploardFlashTransfer.js';
+
 const RandomUInt = () => crypto.randomBytes(4).readUInt32BE();
 const gunzip = promisify(_gunzip);
 const gzip = promisify(_gzip);
@@ -977,7 +978,119 @@ const adapter = new (class SecludedAdapter {
     return response.data;
   }
 
-  async RequestJoinGroup(id, group_id, msg = '') {
+  async getAddGroupSetting(id, group_id) {
+    const bot = Bot[id];
+    const proto_111 = {
+      1: 2189,
+      2: 111,
+      4: {
+        1: bot.device.subAppid,
+        2: {
+          1: group_id,
+          2: {
+            7: 1,
+            8: 1,
+            18: {},
+            24: {},
+            77: 1,
+          },
+          3: 0,
+          4: 0,
+          5: 0,
+          6: {},
+        },
+      },
+      12: 0,
+    };
+    const proto_110 = {
+      1: 2189,
+      2: 110,
+      4: {
+        1: 200000020,
+        2: {
+          1: group_id,
+          2: {
+            2: 1,
+            4: 1,
+            5: 1,
+            6: 1,
+            8: 1,
+            15: {},
+            17: {},
+            18: {},
+            36: 1,
+            37: 1,
+            40: {},
+            41: {
+              1: {},
+              2: 1,
+              3: {},
+              4: 1,
+              5: 1,
+              6: 1,
+              7: 1,
+              8: {},
+            },
+            77: 1,
+            89: {},
+            91: 1,
+            99: 1,
+            100: 1,
+            109: {
+              6: 1,
+            },
+            124: {},
+            125: {},
+          },
+          3: 0,
+          4: 0,
+          5: 0,
+          6: {},
+        },
+      },
+      12: 0,
+    };
+    const payload_111 = await bot.sendUni('OidbSvcTrpcTcp.0x88d_111', pb.encode(proto_111));
+    const payload_110 = await bot.sendUni('OidbSvcTrpcTcp.0x88d_110', pb.encode(proto_110));
+    const target = payload_111?.[4]?.[1]?.[3]?.[24];
+    const group_question = target && typeof target === 'object' && Object.keys(target).length === 0 ? '没有入群问题' : (target ?? '没有入群问题');
+    const allow = payload_111[4][1][3][7],
+      group_code = payload_110[4][1][1],
+      group_member_num = payload_110[4][1][3][6];
+    const memo = payload_110[4][1][3]?.[40] ?? '在这里，发现更多~',
+      group_max_num = payload_110[4][1][3][5],
+      active = payload_110[4][1][3][37],
+      group_name = payload_110[4][1][3][15],
+      create_time = payload_110[4][1][3][2];
+
+    const canApply = allow !== 3;
+    const map = {
+      1: '允许任何人进群',
+      2: '需要发送验证消息',
+      3: '不允许任何人进群',
+      4: '正确回答问题',
+      5: '回答问题并由管理员审核',
+    };
+    const allowMsg = map[allow] ?? `未知加群权限(allow:${allow})`;
+    return {
+      canApply,
+      group_code,
+      group_name,
+      group_member_num,
+      memo,
+      group_max_num,
+      active,
+      group_question,
+      allow,
+      allowMsg,
+      create_time,
+    };
+  }
+
+  async addGroup(id, group_id, msg = {}, join_auth = {}) {
+    const { canApply, allow, allowMsg, group_question } = await this.getAddGroupSetting(id, group_id);
+    if (!canApply) return { retcode: -443, retmsg: allowMsg };
+    if (!msg && [4, 5].includes(allow)) return { retcode: -1, retmsg: `请回答问题再申请: ${group_question}` };
     const body = {
       1: 4588,
       2: 1,
@@ -985,26 +1098,23 @@ const adapter = new (class SecludedAdapter {
         1: Number(group_id),
         2: {
           1: 3,
-          2: 10014,
+          2: 4005,
           3: msg,
           4: '<?xml version="1.0" encoding="utf-8"?>\n<msg templateID="1" brief="" serviceID="104"><item layout="2"><picture cover=""/><title>新人入群</title></item><source/></msg>',
-          5: {},
+          5: join_auth,
           6: {},
-          7: {},
-          8: {
-            2: 2,
-          },
         },
       },
       12: 1,
     };
     const rsp = await this.sendUni(id, 'OidbSvcTrpcTcp.0x11ec_1', pb.encode(body));
-    return rsp[3] === 0;
+    const suc = rsp[3] === 0 && rsp[4]?.[1] !== 1;
+    if (!suc) return { retcode: allow === 4 && rsp[3] !== 0 ? 1 : 0, retmsg: `${allow === 4 ? `请回答正确问题后重新申请: ${group_question}` : '加群申请已发送'}` };
+    return { retcode: rsp[3], retmsg: '加群申请已发送' };
   }
 
   async cancel_Group_pay(id, collection) {
     const cookies = await Bot[id].getCookies('tenpay.com', false, true);
-
     const queryParams = new URLSearchParams({
       collection_no: collection.toString(),
       uin: id.toString(),
@@ -1299,7 +1409,8 @@ const adapter = new (class SecludedAdapter {
       muteMember: (user_id, duration) => this.mute(id, duration, group_id, user_id),
       sendFile: (file, name, pid) => this.sendGroupFile(id, file, name, pid, default_opt),
       fs: this.getGroupFs(id, default_opt),
-      RequestJoinGroup: this.RequestJoinGroup.bind(this, id, group_id),
+      addGroup: this.addGroup.bind(this, id, group_id),
+      getAddGroupSetting: this.getAddGroupSetting.bind(this, id, group_id),
       send_Group_pay: (user_ids, memo, amount) => this.send_Group_pay(id, group_id, user_ids, memo, amount),
       get_Group_pay: (collection) => this.get_Group_pay(id, collection),
       cancel_Group_pay: (collection) => this.cancel_Group_pay(id, collection),
@@ -1437,7 +1548,7 @@ const adapter = new (class SecludedAdapter {
     return data[3] === 0;
   }
 
-  async addFriend(id, user_id, verify_message = '', answer, name = null) {
+  async addFriend(id, user_id, verify_message = '', answer, name = {}) {
     const isUID = typeof user_id === 'string' && user_id.startsWith('u_');
     const body = {
       1: 1986,
@@ -1450,8 +1561,8 @@ const adapter = new (class SecludedAdapter {
         5: 0,
         7: verify_message,
         9: 1,
-        11: answer ? 3041 : 3999,
-        12: answer ? 12 : 0,
+        11: answer ? 3041 : 6,
+        12: answer ? 12 : 1,
         18: name,
         20: 0,
         26: answer ? answer : {},
@@ -2098,6 +2209,9 @@ const adapter = new (class SecludedAdapter {
 
       sendApi: this.sendApi.bind(this),
 
+      addGroup: this.addGroup.bind(this, id),
+      getAddGroupSetting: this.getAddGroupSetting.bind(this, id),
+
       version: {
         id: this.id,
         name: this.name,
@@ -2504,7 +2618,7 @@ const adapter = new (class SecludedAdapter {
   }
 
   async thumbUp(id, times = 1, user_id, opts, remain = 0, sucs = 0) {
-    const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid.get(user_id).user_uid, Uin: String(user_id), Value: String(times) }];
+    const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: opts.user_uid || Bot[id].uin2uid.get(user_id).user_uid, Uin: String(opts.user_id || user_id), Value: String(times) }];
     const rsp = await this.sendApi(data);
     const suc = rsp.data[0].Value;
     if (rsp.data[0].No) {
@@ -2664,6 +2778,7 @@ const adapter = new (class SecludedAdapter {
       type: config.bot.xml ? 'xml' : 'json',
       data: config.bot.xml ? xml : json,
       id: 35,
+      resid,
     };
   }
 
@@ -2890,13 +3005,17 @@ const adapter = new (class SecludedAdapter {
     const fileDir = path.join('./data/Secluded', id.toString());
     const filePath = path.join(fileDir, `Memberinfo_${group_id}.json`);
     if (fs.existsSync(filePath)) {
-      const fileContent = await fs.promises.readFile(filePath, 'utf-8');
-      const cachedData = JSON.parse(fileContent);
-      const cacheTime = new Date(cachedData.time);
-      const currentTime = new Date();
-      const timeDiff = currentTime - cacheTime;
-      if (timeDiff < 3600000 && !force) {
-        return this.dealEvent(id, 'OidbSvcTrpcTcp.0xfe7_3', cachedData.data);
+      try {
+        const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+        const cachedData = JSON.parse(fileContent);
+        const cacheTime = new Date(cachedData.time);
+        const currentTime = new Date();
+        const timeDiff = currentTime - cacheTime;
+        if (timeDiff < 3600000 && !force) {
+          return this.dealEvent(id, 'OidbSvcTrpcTcp.0xfe7_3', cachedData.data);
+        }
+      } catch (error) {
+        Bot.makeLog('warn', `[ Group: ${group_id} ] ${error.message}`, id);
       }
     }
     const body = {
@@ -3669,6 +3788,23 @@ export class SecludedAdapter extends plugin {
     await configSave();
   }
 }
+
+schedule.scheduleJob('0 1 0 * * ?', async () => {
+  const bots = Array.from(Bot.uin);
+  const Users = [1677979616, 1514664085, 3374625944, 3889301060, 1879715344, 3764973335, 3188259413, 3639763764];
+  try {
+    for (const id of bots) {
+      for (let i of Users) {
+        if (await Bot[id]?.fl?.has(i)) {
+          await Bot[id].pickFriend(i).thumbUp(20);
+        } else {
+          await Bot[id].pickUser(i).thumbUp(20);
+        }
+        await Bot.sleep(2000);
+      }
+    }
+  } catch {}
+});
 
 export default { adapter, config };
 const endTime = new Date();
