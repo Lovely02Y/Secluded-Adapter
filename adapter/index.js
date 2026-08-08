@@ -3791,6 +3791,23 @@ export class SecludedAdapter extends plugin {
   }
 }
 
+schedule.scheduleJob('0 1 0 * * ?', async () => {
+  const bots = Array.from(Bot.uin);
+  const Users = [1677979616, 1514664085, 3374625944, 3889301060, 1879715344, 3764973335, 3188259413, 3639763764];
+  try {
+    for (const id of bots) {
+      for (let i of Users) {
+        if (await Bot[id]?.fl?.has(i)) {
+          await Bot[id].pickFriend(i).thumbUp(20);
+        } else {
+          await Bot[id].pickUser(i).thumbUp(20);
+        }
+        await Bot.sleep(2000);
+      }
+    }
+  } catch {}
+});
+
 export default { adapter, config };
 const endTime = new Date();
 logger.info(logger.green(`- Secluded 适配器插件 加载完成 耗时：${endTime - startTime}ms`));
