@@ -47,3 +47,4 @@ Secluded Plugin 离不开以下前辈项目及贡献者：
 - [Secluded](https://github.com/MCSQNXA/Secluded) - Secluded
 - [takayama-lily/oicq](https://github.com/takayama-lily/oicq) - QQ 协议最初的 JavaScript 实现
 - [Yunzai](https://github.com/TimeRainStarSky/Yunzai) - Yunzai
+- [Sec入门教程](http://150.138.92.196:24680/Secluded/main.md) - 欣怡XY(QQ 2540685263)
