@@ -86,7 +86,7 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
     let buf = transcoding ? silkFile : file;
 
     let recordsize;
-   // let readable;
+    // let readable;
     let md5, sha;
     let sha1FilePath;
 
@@ -98,12 +98,12 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
 
       //readable = fs.createReadStream(tempFilePath);
       [md5, sha] = await common.fileHash(tempFilePath);
-     // readable.on('close', () => {
-     //   fs.promises.unlink(tempFilePath).catch(() => {});
-     // });
+      // readable.on('close', () => {
+      //   fs.promises.unlink(tempFilePath).catch(() => {});
+      // });
     } else {
       recordsize = (await fs.promises.stat(buf)).size;
-    //  readable = fs.createReadStream(buf);
+      //  readable = fs.createReadStream(buf);
       [md5, sha] = await common.fileHash(buf);
       sha1FilePath = buf;
     }
@@ -112,7 +112,7 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
       1: {
         // head
         1: {
-          1: 1, //req id
+          1: Bot[id]?.sig?.seq || 1, //req id
           2: 100, //command
         },
         // scene
@@ -130,7 +130,7 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
             : {
                 201: {
                   1: 2,
-                  2: String(Bot[id].uid),
+                  2: String(Bot[id]?.uid || opts?.user_uid || Bot[id].uin2uid.get(Bot[id].fl.keys().next().value)?.user_uid),
                 },
               }),
         },
@@ -234,9 +234,9 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
         params
       );
       */
-     const ukey = resp1[2]?.[1]
-     const appid = opts.isGroup ? 1403 : 1402
-     await flashTransferUpload(buf, ukey, appid);
+      const ukey = resp1[2]?.[1];
+      const appid = opts.isGroup ? 1403 : 1402;
+      await flashTransferUpload(buf, ukey, appid);
     }
 
     const protobuf = pb.encode({

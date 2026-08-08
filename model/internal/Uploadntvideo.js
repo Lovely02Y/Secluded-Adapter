@@ -292,7 +292,7 @@ class ApiRejection extends Error {
 
 export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
   logger.debug('开始视频任务');
-  let gid = opts.isGroup ? opts.id : Bot[id].gl.keys().next().value;
+  //let gid = opts.isGroup ? opts.id : Bot[id].gl.keys().next().value;
   let { file, temp = false } = _video;
   if (file instanceof Buffer) {
     file = await _saveFileToTmpDir(file);
@@ -347,8 +347,8 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
 
   const [md5video, sha1video] = await common.fileHash(file);
   const [md5thumb, sha1thumb] = await common.fileHash(thumb);
- // const readable = fs.createReadStream(file);
- // const readable2 = fs.createReadStream(thumb);
+  // const readable = fs.createReadStream(file);
+  // const readable2 = fs.createReadStream(thumb);
   const buf = await Bot.Buffer(file);
   const buf2 = await Bot.Buffer(thumb);
   const videosize = (await fs.promises.stat(file)).size;
@@ -369,7 +369,7 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
       size: thumbsize,
     },
     id,
-    gid
+    opts
   );
 
   let video_fid, thumb_fid;
@@ -420,8 +420,8 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
       params
     );
     */
-    const ukey = resp1[2]?.[1]
-    const appid = opts.isGroup ? 1415 : 1413
+    const ukey = resp1[2]?.[1];
+    const appid = opts.isGroup ? 1415 : 1413;
     await flashTransferUpload(buf, ukey, appid);
   }
 
@@ -456,8 +456,8 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
       params
     );
     */
-    const ukey = resp1[2][10]?.[2]
-    const appid = opts.isGroup ? 1416 : 1414
+    const ukey = resp1[2][10]?.[2];
+    const appid = opts.isGroup ? 1416 : 1414;
     await flashTransferUpload(buf2, ukey, appid);
   }
   fs.unlink(thumb, NOOP);
@@ -516,7 +516,7 @@ export async function _downloadFileToTmpDir(url, headers = {}) {
   }
 }
 
-async function _requestUploadVideo(videoInfo, thumbInfo, id, gid) {
+async function _requestUploadVideo(videoInfo, thumbInfo, id, opts) {
   let body = createMediaUploadPb(
     [
       {
@@ -558,29 +558,39 @@ async function _requestUploadVideo(videoInfo, thumbInfo, id, gid) {
         2: 100,
       },
     ],
-    gid
+    opts,
+    id
   );
 
-  const rsp = await Bot[id].sendOidbSvcTrpcTcp('OidbSvcTrpcTcp.0x11EA_100', body);
+  const rsp = await Bot[id].sendOidbSvcTrpcTcp(`OidbSvcTrpcTcp.0x11e${opts.isGroup ? 'a' : '9'}_100`, body);
   return rsp;
 }
 
-function createMediaUploadPb(files, gid) {
+function createMediaUploadPb(files, opts, id) {
   return {
     1: {
       // head
       1: {
-        1: 3, //req id
+        1: Bot[id]?.sig?.seq || 3, //req id
         2: 100, //command
       },
       // scene
       2: {
         101: 2, //req type
         102: 2, //business type
-        200: 2, // scene type 1:c2c 2:group
-        202: {
-          1: gid, // account type
-        },
+        200: opts.isGroup ? 2 : 1, // scene type 1:c2c 2:group
+        ...(opts.isGroup
+          ? {
+              202: {
+                1: opts.id,
+              },
+            }
+          : {
+              201: {
+                1: 2,
+                2: String(Bot[id]?.uid || opts?.user_uid || Bot[id].uin2uid.get(Bot[id].fl.keys().next().value)?.user_uid),
+              },
+            }),
       },
       // client
       3: {

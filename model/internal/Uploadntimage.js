@@ -90,7 +90,7 @@ export const uploadNTImages = async (id, _image, opts) => {
     if (opts.dm) {
       sceneInfo[201] = {
         1: 2,
-        2: String(Bot[id].uid),
+        2: String(Bot[id]?.uid || opts?.user_uid || Bot[id].uin2uid.get(Bot[id].fl.keys().next().value)?.user_uid),
       };
 
       if (opts.group_id) {
@@ -112,7 +112,7 @@ export const uploadNTImages = async (id, _image, opts) => {
     const proto = {
       1: {
         1: {
-          1: req_id++,
+          1: Bot[id]?.sig?.seq || req_id++,
           2: 100,
         },
         2: sceneInfo,
@@ -178,9 +178,9 @@ export const uploadNTImages = async (id, _image, opts) => {
         params
       );
       */
-     const ukey = resp1[2]?.[1]
-     const appid = opts.isGroup ? 1407 : 1406
-     await flashTransferUpload(file, ukey, appid);
+      const ukey = resp1[2]?.[1];
+      const appid = opts.isGroup ? 1407 : 1406;
+      await flashTransferUpload(file, ukey, appid);
     }
   } catch (e) {
     logger.warn('图片上传失败：' + e);

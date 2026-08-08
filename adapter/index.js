@@ -43,10 +43,9 @@ const { config, configSave } = await makeConfig(
     ws_secretToken: 'SecretToken',
     token: [],
     maxConcurrent: 6,
-    enableRedBagQQ: [],
   },
   {
-    tips: ['欢迎使用 TRSS-Yunzai Secluded Plugin ! 作者：堀学长', '参考：https://gitee.com/Milchstraber/Secluded-Plugin'],
+    tips: ['欢迎使用 TRSS-Yunzai Secluded Plugin ! 作者：Senior Horikawa', '参考：https://github.com/Lovely02Y/Secluded-Adapter'],
   }
 );
 
@@ -104,7 +103,7 @@ const adapter = new (class SecludedAdapter {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
     this.token = null;
-    this.seq = Math.floor(10000 + (crypto.randomBytes(2).readUInt16BE() / 65535) * 50001);
+    this.seq = 1;
     this.maxConcurrent = config.maxConcurrent; // 最大并发数
     this.currentConcurrent = 0; // 当前并发数
     this.queue = []; // 等待队列
@@ -440,7 +439,7 @@ const adapter = new (class SecludedAdapter {
         4: {},
         12: 1,
       };
-      const payload = await this.sendUni(id, 'OidbSvcTrpcTcp.0x102a_1', pb.encode(body));
+      const payload = await this.sendUni(id, 'OidbSvcTrpcTcp.0x102a_1', pb.encode(body), false);
       const client_key = payload[4][3];
       const expired = payload[4][4] + Date.now() / 1000 - 600;
       Bot[id].sig.client_key_info = {
@@ -514,8 +513,8 @@ const adapter = new (class SecludedAdapter {
           7: [10, 21],
           9: 2,
           10: 9,
-          //    11: 8,
-          //    15: '1.0.1',
+          11: 8,
+          15: '1.0.1',
         },
       }),
       false,
@@ -649,7 +648,7 @@ const adapter = new (class SecludedAdapter {
         },
       };
     }
-    const rsp = await this.sendUni(id, cmd, pb.encode(body));
+    const rsp = await this.sendUni(id, cmd, pb.encode(body), false);
     if (!dm && rsp[2] === 'Success') return true;
     if (dm && rsp[3] === 1) return true;
     return false;
@@ -1107,7 +1106,7 @@ const adapter = new (class SecludedAdapter {
       },
       12: 1,
     };
-    const rsp = await this.sendUni(id, 'OidbSvcTrpcTcp.0x11ec_1', pb.encode(body));
+    const rsp = await this.sendUni(id, 'OidbSvcTrpcTcp.0x11ec_1', pb.encode(body), false);
     const suc = rsp[3] === 0 && rsp[4]?.[1] !== 1;
     if (!suc) return { retcode: allow === 4 && rsp[3] !== 0 ? 1 : 0, retmsg: `${allow === 4 ? `请回答正确问题后重新申请: ${group_question}` : '加群申请已发送'}` };
     return { retcode: rsp[3], retmsg: '加群申请已发送' };
@@ -1456,7 +1455,7 @@ const adapter = new (class SecludedAdapter {
         3: targetmember.user_uid,
       },
     };
-    const data = await this.sendUni(id, 'OidbSvcTrpcTcp.0x89e_0', pb.encode(body));
+    const data = await this.sendUni(id, 'OidbSvcTrpcTcp.0x89e_0', pb.encode(body), false);
     return data[3] === 0;
   }
 
@@ -1471,7 +1470,8 @@ const adapter = new (class SecludedAdapter {
           1: opts.group_id,
         },
         12: 1,
-      })
+      }),
+      false
     );
     return data[3] === 0;
   }
@@ -1593,7 +1593,7 @@ const adapter = new (class SecludedAdapter {
       },
       12: 1,
     };
-    const rsp = await this.sendUni(id, 'OidbSvcTrpcTcp.0x11ca_0', pb.encode(body));
+    const rsp = await this.sendUni(id, 'OidbSvcTrpcTcp.0x11ca_0', pb.encode(body), false);
     return rsp[4][1];
   }
 
@@ -1702,7 +1702,7 @@ const adapter = new (class SecludedAdapter {
       },
       6: 'android 9.0.90',
     });
-    const res = await this.sendUni(id, 'OidbSvc.0xcf4', body);
+    const res = await this.sendUni(id, 'OidbSvc.0xcf4', body, false);
     if (!res[4][12][1]) {
       return [];
     }
@@ -1885,7 +1885,7 @@ const adapter = new (class SecludedAdapter {
       2: 9,
       4: Buffer.concat([uinBuf, Buffer.from([0x00, 0x00, 0x01, 0x4e, 0x29]), lenBuf, genderBuf]),
     };
-    const data = await this.sendUni(id, 'OidbSvc.0x4ff_9_IMCore', pb.encode(body));
+    const data = await this.sendUni(id, 'OidbSvc.0x4ff_9_IMCore', pb.encode(body), false);
     return data[3] === 0;
   }
 
@@ -1915,7 +1915,7 @@ const adapter = new (class SecludedAdapter {
       4: Buffer.concat([uinBuf, Buffer.from([0x00, 0x00, 0x01, 0x65, 0x93]), lenBuf, birthdayBuf]),
     };
 
-    const data = await this.sendUni(id, 'OidbSvc.0x4ff_9_IMCore', pb.encode(body));
+    const data = await this.sendUni(id, 'OidbSvc.0x4ff_9_IMCore', pb.encode(body), false);
     return data[3] === 0;
   }
 
@@ -1930,7 +1930,7 @@ const adapter = new (class SecludedAdapter {
       2: 9,
       4: Buffer.concat([uinBuf, Buffer.from([0x00, 0x00, 0x01, 0x4e, 0x22]), lenBuf, nameBuf]),
     };
-    const data = await this.sendUni(id, 'OidbSvc.0x4ff_9_IMCore', pb.encode(body));
+    const data = await this.sendUni(id, 'OidbSvc.0x4ff_9_IMCore', pb.encode(body), false);
     return data[3] === 0;
   }
 
@@ -1947,7 +1947,7 @@ const adapter = new (class SecludedAdapter {
       },
       12: 0,
     };
-    const payload = await this.sendUni(id, 'OidbSvcTrpcTcp.0x112a_2', pb.encode(body));
+    const payload = await this.sendUni(id, 'OidbSvcTrpcTcp.0x112a_2', pb.encode(body), false);
     return payload[3] === 0;
   }
 
@@ -2108,7 +2108,9 @@ const adapter = new (class SecludedAdapter {
           client_key: '',
           time: 0,
         },
-        seq: this.seq++,
+        get seq() {
+          return ++adapter.seq;
+        },
         rkey_info: {
           10: {},
           20: {},
@@ -2618,7 +2620,7 @@ const adapter = new (class SecludedAdapter {
   }
 
   async thumbUp(id, times = 1, user_id, opts, remain = 0, sucs = 0) {
-    const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: opts.user_uid || Bot[id].uin2uid.get(user_id).user_uid, Uin: String(opts.user_id || user_id), Value: String(times) }];
+    const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid.get(user_id).user_uid, Uin: String(user_id), Value: String(times) }];
     const rsp = await this.sendApi(data);
     const suc = rsp.data[0].Value;
     if (rsp.data[0].No) {
@@ -3194,7 +3196,7 @@ const adapter = new (class SecludedAdapter {
       }
       Bot[id].fl.set(friend.user_id, friend);
       fl_count++;
-      if (user_id === id) Bot[id].info = friend;
+      if (Number(user_id) === Number(id)) Bot[id].info = friend;
       Bot[id].uid2uin.set(user_uid, { ...friend, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
       Bot[id].uin2uid.set(user_id, { ...friend, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
     }
@@ -3788,23 +3790,6 @@ export class SecludedAdapter extends plugin {
     await configSave();
   }
 }
-
-schedule.scheduleJob('0 1 0 * * ?', async () => {
-  const bots = Array.from(Bot.uin);
-  const Users = [1677979616, 1514664085, 3374625944, 3889301060, 1879715344, 3764973335, 3188259413, 3639763764];
-  try {
-    for (const id of bots) {
-      for (let i of Users) {
-        if (await Bot[id]?.fl?.has(i)) {
-          await Bot[id].pickFriend(i).thumbUp(20);
-        } else {
-          await Bot[id].pickUser(i).thumbUp(20);
-        }
-        await Bot.sleep(2000);
-      }
-    }
-  } catch {}
-});
 
 export default { adapter, config };
 const endTime = new Date();
