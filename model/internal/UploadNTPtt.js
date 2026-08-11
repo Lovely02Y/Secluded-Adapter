@@ -101,6 +101,7 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
       // readable.on('close', () => {
       //   fs.promises.unlink(tempFilePath).catch(() => {});
       // });
+      fs.unlink(tempFilePath, () => {});
     } else {
       recordsize = (await fs.promises.stat(buf)).size;
       //  readable = fs.createReadStream(buf);
@@ -191,7 +192,6 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
 
     const resp1 = await Bot[id].sendOidbSvcTrpcTcp(opts.isGroup ? 'OidbSvcTrpcTcp.0x126E_100' : 'OidbSvcTrpcTcp.0x126d_100', body);
     let sha1 = await calculateSha1StreamBytes(sha1FilePath);
-
     if (resp1[2]?.[1]) {
       /*
       const params = {
@@ -238,53 +238,11 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
       const appid = opts.isGroup ? 1403 : 1402;
       await flashTransferUpload(buf, ukey, appid);
     }
-
-    const protobuf = pb.encode({
-      1: 48,
-      2: {
-        1: {
-          1: resp1[2][6][1][1],
-          5: 0,
-          6: '',
-        },
-        2: {
-          1: {
-            1: 0,
-            2: '',
-          },
-          2: {
-            3: '',
-          },
-          3: {
-            1: id,
-            2: 2,
-            5: {
-              1: 15,
-              2: 'Powered By 堀学长',
-            },
-            11: '',
-            12: {
-              ...(bs
-                ? {
-                    1: 1,
-                  }
-                : {
-                    1: 0,
-                  }),
-              7: 0,
-              ...(isAI
-                ? {
-                    9: 1,
-                  }
-                : {}),
-            },
-          },
-          10: 3,
-        },
-      },
-      3: opts.isGroup ? 22 : 12,
-    });
-
+    if (temp) fs.unlink(file, () => {});
+    const inner = resp1[2][6];
+    (inner[2] ??= {})[3] ??= {};
+    inner[2][3][12] = Object.assign({ 1: bs ? 1 : 0, 7: 0 }, isAI && { 9: 1 });
+    const protobuf = pb.encode({ 1: 48, 2: inner, 3: opts.isGroup ? 22 : 12 });
     return {
       type: 'record',
       file: 'protobuf://' + Buffer.from(protobuf).toString('base64'),

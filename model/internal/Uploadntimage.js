@@ -5,6 +5,7 @@ import probe from 'probe-image-size';
 import crypto from 'crypto';
 import pb from '../protobuf/index.js';
 import { segment, ChainElemTypes } from '../elements.js';
+import fs from 'fs';
 
 export function initializeSegment() {
   if (!global.segment) {
@@ -33,15 +34,15 @@ let req_id = 1;
 export const uploadNTImages = async (id, _image, opts) => {
   let resp1 = {};
   let { file, headers, asface, origin, summary, width, height } = _image;
+  if (String(file).startsWith('protobuf://')) return _image;
   try {
-    if (String(file).startsWith('protobuf://')) return _image;
     file = await Bot.Buffer(file, { headers });
+    const path = await _saveFileToTmpDir(file);
     const size = file.length;
     const { type: type_raw, width: width_raw, height: height_raw } = probe.sync(file);
     if (!width) width = width_raw;
     if (!height) height = height_raw;
     const type = TYPE[type_raw] || 1000;
-    const path = await _saveFileToTmpDir(file);
     const [md5, sha1] = await common.fileHash(path);
 
     const fileInfos = [
@@ -182,6 +183,7 @@ export const uploadNTImages = async (id, _image, opts) => {
       const appid = opts.isGroup ? 1407 : 1406;
       await flashTransferUpload(file, ukey, appid);
     }
+    fs.unlink(path, () => {});
   } catch (e) {
     logger.warn('图片上传失败：' + e);
   }

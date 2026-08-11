@@ -466,7 +466,7 @@ export const uploadntVideo = async (id, _video, opts, isBubble = false) => {
   const _body = {
     1: 48,
     2: resp1[2][6],
-    3: isBubble ? 24 : 21,
+    3: opts.isGroup ? (isBubble ? 24 : 21) : isBubble ? 14 : 11,
   };
   return {
     type: isBubble ? 'bubble' : 'video',
