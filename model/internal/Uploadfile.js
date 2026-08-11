@@ -201,7 +201,7 @@ export const UploadFriendfile = async (id, file, filename, opts) => {
     const params = {
       uin: id,
       apk: {
-        subid: bot?.apk?.subid ?? '537294924',
+        subid: Bot[id]?.apk?.subid ?? '537294924',
       },
       useHttp: false,
       sig: {

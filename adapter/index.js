@@ -1061,7 +1061,6 @@ const adapter = new (class SecludedAdapter {
       active = payload_110[4][1][3][37],
       group_name = payload_110[4][1][3][15],
       create_time = payload_110[4][1][3][2];
-
     const canApply = allow !== 3;
     const map = {
       1: '允许任何人进群',
@@ -1358,6 +1357,48 @@ const adapter = new (class SecludedAdapter {
     return rsp[3] === 0;
   }
 
+  async getFlFileInfo(id, fid) {
+    const body = pb.encode({
+      1: 1200,
+      14: {
+        10: id,
+        20: fid,
+        30: 2,
+      },
+      101: 3,
+      102: 104,
+      99999: { 1: 90200 },
+    });
+    const payload = await Bot[id].sendUni('OfflineFilleHandleSvr.pb_ftn_CMD_REQ_APPLY_DOWNLOAD-1200', body, false);
+    const rsp = payload[14];
+    if (rsp[10] === 0) {
+      const obj = rsp[30];
+      let url = String(obj[50]);
+      if (!url.startsWith('http')) url = `http://${obj[30]}:${obj[40]}` + url;
+      try {
+        const _url = new URL(url);
+        if (obj[90]) _url.hostname = String(obj[90]);
+        url = _url.href;
+      } catch {}
+      return {
+        name: String(rsp[40][7]),
+        fid: String(rsp[40][6]),
+        md5: rsp[40][100].toHex(),
+        size: rsp[40][3],
+        duration: rsp[40][4],
+        url,
+      };
+    }
+  }
+
+  async getFileUrl(id, fid, opts) {
+    if (opts.isGroup) {
+      return (await Bot[id].pickGroup(opts.group_id).fs.download(fid)).url;
+    } else {
+      return (await this.getFlFileInfo(id, fid)).url;
+    }
+  }
+
   pickGroup(id, group_id) {
     group_id = Number(group_id);
     let data = {
@@ -1408,6 +1449,7 @@ const adapter = new (class SecludedAdapter {
       muteMember: (user_id, duration) => this.mute(id, duration, group_id, user_id),
       sendFile: (file, name, pid) => this.sendGroupFile(id, file, name, pid, default_opt),
       fs: this.getGroupFs(id, default_opt),
+      getFileUrl: (fid) => this.getFileUrl(id, fid, default_opt),
       addGroup: this.addGroup.bind(this, id, group_id),
       getAddGroupSetting: this.getAddGroupSetting.bind(this, id, group_id),
       send_Group_pay: (user_ids, memo, amount) => this.send_Group_pay(id, group_id, user_ids, memo, amount),
@@ -1507,6 +1549,7 @@ const adapter = new (class SecludedAdapter {
       getAvatarUrl() {
         return `https://q.qlogo.cn/g?b=qq&s=0&nk=${user_id}`;
       },
+      getFileUrl: (fid) => this.getFileUrl(id, fid, default_opt),
       sendFile: (file, name) => this.sendFriendFile(id, file, name, default_opt),
       getInfo: () => this.getFriendInfo(id, user_id, default_opt),
       searchSameGroup: () => this.searchSameGroup(id, default_opt),
@@ -1516,6 +1559,10 @@ const adapter = new (class SecludedAdapter {
       getFriendShareJson: () => this.getFriendShareJson(id, default_opt),
       delete: (block = false) => this.deleteFriend(id, user_id, block),
       addFriend: (verify_message, answer, name) => this.addFriend(id, user_id, verify_message, answer, name),
+      getFileInfo: (fid) => this.getFlFileInfo(id, fid),
+      get info() {
+        return Bot[id].uin2uid.get(user_id);
+      },
     };
   }
 
