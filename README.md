@@ -1,50 +1,46 @@
 <div align="center">
 
-# TRSS-Yunzai Secluded Plugin
-TRSS-Yunzai Secluded Bot 适配器插件
+# TRSS‑Yunzai Secluded Plugin
+TRSS‑Yunzai 的 Secluded Bot 适配器插件
 
 </div>
 
-## 程序目录
+## 📂 程序目录
 [Secluded 主程序](./Secluded)
 
-## 安装教程
-1. 前置环境：部署 [TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai)
+## 🚀 安装教程
+1. 前置环境：部署 [TRSS‑Yunzai](https://github.com/TimeRainStarSky/Yunzai)
 2. 执行命令安装项目依赖
-3. 重启云崽，自动生成配置文件
+3. 重启 Yunzai，会自动生成插件配置文件
     [>>>点击查看适配器配置示例<<<](./help/sec适配器配置.png)
-4. 启动sec程序，打开后台网页，点击左上角菜单，进入`软件设置`页面
+4. 启动 Secluded 程序，打开后台网页，点击左上角菜单，进入 `软件设置` 页面
     [>>>页面示例<<<](./help/sec配置.png)
-5. 全部配置完成后重启云崽，提示连接成功即可
+5. 全部配置完成后再次重启 Yunzai，出现连接成功提示即代表适配器正常工作
 6. 机器人登录指令：`#sec设置1145141919`
 
-
-## Tips
-若无法正常接收机器人推送消息，请手动开启Secluded程序对应账号的调试模式，操作步骤如下：
-1. 打开Secluded网页管理端
-2. 登录需配置的目标账号
+## 💡 Tips
+### 消息推送异常排查
+如果机器人无法正常接收推送消息，请手动开启 Secluded 对应账号的**调试模式**：
+1. 打开 Secluded 网页管理端
+2. 登录目标配置账号
 3. 进入【开关管理】页面
-4. 找到并开启【调试模式】选项
-5. 点击保存完成配置
+4. 找到并开启【调试模式】
+5. 保存配置
 
+> 备选方案：导入自动Debug词库
+词库文件：[自动Debug词库.txt](./help/自动Debug词库.txt)
 
-Or
+- Linux 放置路径：`/root/sec/lexicon/自动Debug词库.txt`
+- Windows 放置路径：`C:\..\sec\lexicon\自动Debug词库.txt`
+- Android：直接在 Secluded 网页端导入词库
 
-安装词库: [自动Debug词库.txt](./help/自动Debug词库.txt)
+### ⚠️ 重要依赖要求
+服务器必须预先安装 **ffmpeg**，缺少该依赖将无法解析和处理语音消息。
+安装完成后需要配置系统环境变量，保证全局可以调用 `ffmpeg` 命令。
 
-Linux词库放置路径: `/root/sec/lexicon/自动Debug词库.txt`
-
-Windows同理: `c://..//sec//lexicon//自动Debug词库.txt`
-
-Android直接打开Secluded网页导入词库
-
-额外环境部署要求：
-服务器必须提前安装ffmpeg工具，缺少该依赖将无法解析、处理语音消息；安装完成后需配置系统环境变量，确保全局可调用ffmpeg。
-
-## Special Thanks
-
-Secluded Plugin 离不开以下前辈项目及贡献者：
-- [Secluded](https://github.com/MCSQNXA/Secluded) - Secluded
-- [takayama-lily/oicq](https://github.com/takayama-lily/oicq) - QQ 协议最初的 JavaScript 实现
-- [Yunzai](https://github.com/TimeRainStarSky/Yunzai) - Yunzai
+## 🙏 Special Thanks
+Secluded Plugin 离不开以下开源项目与贡献者：
+- [Secluded](https://github.com/MCSQNXA/Secluded) - Secluded 本体
+- [takayama‑lily/oicq](https://github.com/takayama‑lily/oicq) - QQ协议 JavaScript 原始实现
+- [Yunzai](https://github.com/TimeRainStarSky/Yunzai) - TRSS‑Yunzai 主项目
 - [Sec入门教程](http://150.138.92.196:24680/Secluded/main.md) - 欣怡XY(QQ 2540685263)
