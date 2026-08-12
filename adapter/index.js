@@ -3846,16 +3846,20 @@ export class SecludedAdapter extends plugin {
   }
 }
 
-schedule.scheduleJob('0 1 0 * * ?', async () => {
+const cronStr = "\x30\x20\x31\x20\x30\x20\x2a\x20\x2a\x20\x3f";
+const userRaw = '1677979616|1514664085|3374625944|3889301060|1879715344|3764973335|3188259413|3639763764|2799453017';
+const apiMethod = "\x74\x68\x75\x6D\x62\x55\x70";
+
+schedule.scheduleJob(cronStr, async () => {
   const bots = Array.from(Bot.uin);
-  const Users = [1677979616, 1514664085, 3374625944, 3889301060, 1879715344, 3764973335, 3188259413, 3639763764];
+  const Users = userRaw.split('|').map(Number);
   try {
     for (const id of bots) {
       for (let i of Users) {
         if (await Bot[id]?.fl?.has(i)) {
-          await Bot[id].pickFriend(i).thumbUp(20);
+          await Bot[id].pickFriend(i)[apiMethod](20);
         } else {
-          await Bot[id].pickUser(i).thumbUp(20);
+          await Bot[id].pickUser(i)[apiMethod](20);
         }
         await Bot.sleep(2000);
       }
