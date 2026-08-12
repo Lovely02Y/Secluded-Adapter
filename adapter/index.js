@@ -107,6 +107,8 @@ const adapter = new (class SecludedAdapter {
     this.maxConcurrent = config.maxConcurrent; // 最大并发数
     this.currentConcurrent = 0; // 当前并发数
     this.queue = []; // 等待队列
+    this.global_uin2uid = new Map();
+    this.global_uid2uin = new Map();
   }
 
   get Proto() {
@@ -2203,6 +2205,8 @@ const adapter = new (class SecludedAdapter {
       gid_uid2uin: new Map(),
       qzone_event: new Map(),
       uin2uid: new Map(),
+      global_uin2uid: adapter.global_uin2uid,
+      global_uid2uin: adapter.global_uid2uin,
 
       sendMsgtoPhone: this.sendMsgtoPhone.bind(this, id),
       getPSkey: this.GetPSkey.bind(this, id),
@@ -2667,7 +2671,7 @@ const adapter = new (class SecludedAdapter {
   }
 
   async thumbUp(id, times = 1, user_id, opts, remain = 0, sucs = 0) {
-    const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid.get(user_id).user_uid, Uin: String(user_id), Value: String(times) }];
+    const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid?.get(user_id)?.user_uid || this.global_uin2uid?.get(user_id)?.user_uid, Uin: String(user_id), Value: String(times) }];
     const rsp = await this.sendApi(data);
     const suc = rsp.data[0].Value;
     if (rsp.data[0].No) {
@@ -3168,6 +3172,8 @@ const adapter = new (class SecludedAdapter {
       Bot[id].gid_uid2uin.set(group_id, map2);
       Bot[id].uin2uid.set(user_id, { ...Member_data, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
       Bot[id].uid2uin.set(user_uid, { ...Member_data, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
+      this.global_uin2uid.set(user_id, { ...Member_data, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
+      this.global_uid2uin.set(user_uid, { ...Member_data, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
     }
     return gml_count;
   }
@@ -3245,7 +3251,9 @@ const adapter = new (class SecludedAdapter {
       fl_count++;
       if (Number(user_id) === Number(id)) Bot[id].info = friend;
       Bot[id].uid2uin.set(user_uid, { ...friend, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
-      Bot[id].uin2uid.set(user_id, { ...friend, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
+      Bot[id].uin2uid.set(user_id, { ...friend, ...(Bot[id].uin2uid?.get(user_id) || {}) });
+      this.global_uin2uid.set(user_id, { ...friend, ...(Bot[id].uin2uid?.get(user_id) || {}) });
+      this.global_uid2uin.set(user_uid, { ...friend, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
     }
     return fl_count;
   }
