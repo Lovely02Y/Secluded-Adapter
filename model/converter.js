@@ -30,18 +30,15 @@ function rand2uuid(rand) {
 
 const EMOJI_NOT_ENDING = ['\uD835', '\uD83C', '\uD83D', '\uD83E', '\u200D'];
 const EMOJI_NOT_STARTING = ['\uFE0F', '\u200D', '\u20E3'];
-
 const AT_BUF = Buffer.from([0, 1, 0, 0, 0]);
 const BUF0 = Buffer.alloc(0);
 const BUF1 = Buffer.from([1]);
 const BUF2 = Buffer.alloc(2);
-
 function RandomInt(num1, num2) {
   const min = Math.min(num1, num2);
   const max = Math.max(num1, num2);
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-
 function PB_RESERVER() {
   const bubble_id = config?.bot?.bubble_rand ? RandomInt(2000000, 2025658) : config?.bot?.bubble_id || 0;
   const PB_RESERVER = {
@@ -105,7 +102,6 @@ const PB_FACE_RESERVER = {
 };
 
 const random = (a, b) => Math.floor(Math.random() * (b - a) + a);
-
 /** 将消息元素转换为protobuf */
 export class Converter {
   constructor(client, content, ext) {

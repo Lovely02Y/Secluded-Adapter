@@ -1,16 +1,13 @@
 import protobuf from 'protobufjs/minimal.js';
 import * as zlib from 'zlib';
-
 class Proto {
   get length() {
     return this.encoded.length;
   }
-
   constructor(encoded, decoded) {
     this.encoded = encoded;
     if (decoded) Reflect.setPrototypeOf(this, decoded);
   }
-
   sliceAndDecode(start) {
     const slicedBuffer = this.encoded.slice(start);
     try {
@@ -22,31 +19,24 @@ class Proto {
       return new Proto(slicedBuffer, decoded);
     }
   }
-
   checkTag(...tags) {
     return Object.keys(decode(this.encoded)).filter((key) => tags.includes(parseInt(key))).length === tags.length;
   }
-
   toString() {
     return this.encoded.toString();
   }
-
   toHex() {
     return this.encoded.toString('hex');
   }
-
   toBase64() {
     return this.encoded.toString('base64');
   }
-
   toBuffer() {
     return this.encoded;
   }
-
   toJSONString(replacer, space) {
     return JSON.stringify(this.toJSON(true), replacer, space);
   }
-
   toJSON(convertBigInt = false) {
     const toJSON = (buf) => {
       const compress = decodeCompress(buf);
@@ -99,12 +89,10 @@ class Proto {
     };
     return toJSON(this.encoded);
   }
-
   [Symbol.toPrimitive]() {
     return this.toString();
   }
 }
-
 function _encode(writer, tag, value) {
   if (value === null || value === undefined) return;
   let type = 2;
@@ -426,7 +414,6 @@ class ProtoBufTextDetector {
     }
     return 'unknown';
   }
-
   /**
    * 检查文本模式特征
    */
