@@ -101,7 +101,7 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
       // readable.on('close', () => {
       //   fs.promises.unlink(tempFilePath).catch(() => {});
       // });
-      fs.unlink(tempFilePath, () => {});
+      // 临时文件延后删除，calculateSha1StreamBytes 仍需读取
     } else {
       recordsize = (await fs.promises.stat(buf)).size;
       //  readable = fs.createReadStream(buf);
@@ -192,6 +192,7 @@ export const uploadPtt = async (id, elem, opts, transcoding = true, isAI = true,
 
     const resp1 = await Bot[id].sendOidbSvcTrpcTcp(opts.isGroup ? 'OidbSvcTrpcTcp.0x126E_100' : 'OidbSvcTrpcTcp.0x126d_100', body);
     let sha1 = await calculateSha1StreamBytes(sha1FilePath);
+    if (transcoding) fs.unlink(sha1FilePath, () => {});
     if (resp1[2]?.[1]) {
       /*
       const params = {
