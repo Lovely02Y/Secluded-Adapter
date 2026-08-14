@@ -3036,6 +3036,71 @@ const adapter = new (class SecludedAdapter {
     Bot.em(`${data.post_type}.${data.message_type}.${data.sub_type}`, data);
     data.bot.stat.recv_msg_cnt++;
     Bot.makeLog('info', `recv from: [Private: ${data.sender?.remark || data.sender?.nickname} (${data.from_id}|${data.from_uid})] ` + data.parsed.content, id);
+    this.Groupinvite(id, data);
+  }
+
+    async Groupinvite(id, data) {
+    const jsonItem = data.message.find((item) => item.type === 'json');
+    if (!jsonItem) return;
+    const parseData = JSON.parse(jsonItem.data);
+    const { app, bizsrc, meta, config } = parseData ?? {};
+    const jumpUrl = meta?.news?.jumpUrl;
+    if (!(app === 'com.tencent.tuwen.lua' && bizsrc === 'qun.invite' && jumpUrl)) return;
+    const [, queryStr] = jumpUrl.split('?');
+    if (!queryStr) return;
+    const params = new URLSearchParams(queryStr);
+    const src_type = params.get('src_type');
+    const group_id = params.get('groupcode');
+    const user_id = params.get('senderuin');
+    const receiveruin = params.get('receiveruin');
+    const seq = params.get('msgseq');
+    const group_name = params.get('groupname');
+    const time = config?.ctime;
+    const desc = meta?.news?.desc;
+    if (!(group_id && seq)) return;
+    const event = {
+      post_type: 'request',
+      request_type: 'group',
+      sub_type: 'invite',
+      src_type,
+      group_id,
+      user_id: data.user_id,
+      self_id: data.self_id,
+      nickname: data.nickname,
+      user_uid: data?.user_uid || data.from_uid,
+      receiveruin,
+      sender: data.sender,
+      group_name,
+      time,
+      desc,
+      approve: this.Groupapprove.bind(this, id, group_id, seq),
+    };
+
+    Bot.em(`${event.post_type}.${event.request_type}.${event.sub_type}`, event);
+    Bot.makeLog('info', `recv from: [Private: ${data.sender?.remark || data.sender?.nickname} (${data.from_id}|${data.from_uid})] ${desc}`, id);
+  }
+
+  async Groupapprove(id, group_id, seq, action = true) {
+    if (!action) return true;
+    const body = pb.encode({
+      1: 4296,
+      2: 1,
+      4: {
+        1: 1,
+        2: {
+          1: Number(seq),
+          2: 2,
+          3: Number(group_id),
+          4: {},
+          5: 0,
+          6: {},
+          7: {},
+        },
+      },
+      12: 0,
+    });
+    const payload = await this.sendUni(id, 'OidbSvcTrpcTcp.0x10c8_1', body, false);
+    return payload?.[3] === 0;
   }
 
   async makeGroupMessage(id, payload) {

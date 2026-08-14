@@ -7,6 +7,7 @@ TRSS‑Yunzai 的 Secluded Bot 适配器插件
 
 ## 📂 程序目录
 [Secluded 主程序](./Secluded)
+[下载地址,提取码:7b05](https://nxa.lanzout.com/b0017k4vxi)
 
 ## 🚀 安装教程
 1. 前置环境：部署 [TRSS‑Yunzai](https://github.com/TimeRainStarSky/Yunzai)
