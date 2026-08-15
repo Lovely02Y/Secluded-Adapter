@@ -43,9 +43,11 @@ const { config, configSave } = await makeConfig(
     ws_secretToken: 'SecretToken',
     token: [],
     maxConcurrent: 6,
+    enableRedBag: false,
+    enableRedBagQQ: [],
   },
   {
-    tips: ['欢迎使用 TRSS-Yunzai Secluded Plugin ! 作者：Senior Horikawa', '参考：https://github.com/Lovely02Y/Secluded-Adapter'],
+    tips: ['欢迎使用 TRSS-Yunzai Secluded Plugin ! 作者：堀学长', '参考：https://gitee.com/Milchstraber/Secluded-Plugin'],
   }
 );
 
@@ -328,8 +330,8 @@ const adapter = new (class SecludedAdapter {
     const groups = Array.isArray(data[2]) ? data[2] : [data[2]];
     for (const o of groups) {
       const group_id = o[3],
-        group_name = o[4][5],
-        create_time = o[4][2],
+        group_name = o?.[4]?.[5] || '',
+        create_time = o?.[4]?.[2],
         member_count = o[4][4],
         ownerUid = o[4][1][2];
       const max_member_count = o[4][3],
@@ -1061,7 +1063,7 @@ const adapter = new (class SecludedAdapter {
     const memo = payload_110[4][1][3]?.[40] ?? '在这里，发现更多~',
       group_max_num = payload_110[4][1][3][5],
       active = payload_110[4][1][3][37],
-      group_name = payload_110[4][1][3][15],
+      group_name = payload_110?.[4]?.[1]?.[3]?.[15] || '',
       create_time = payload_110[4][1][3][2];
     const canApply = allow !== 3;
     const map = {
@@ -1072,7 +1074,6 @@ const adapter = new (class SecludedAdapter {
       5: '回答问题并由管理员审核',
     };
     const allowMsg = map[allow] ?? `未知加群权限(allow:${allow})`;
-
     return {
       canApply,
       group_code,
@@ -1485,7 +1486,7 @@ const adapter = new (class SecludedAdapter {
         };
       },
       get name() {
-        return Bot[id].gl?.get(group_id).group_name;
+        return Bot[id].gl?.get(group_id)?.group_name || '';
       },
     };
   }
@@ -3410,7 +3411,7 @@ const adapter = new (class SecludedAdapter {
       ...(data.isinvite ? { invitor: operator_member?.user_id, invitor_name: operator_member?.nickname } : { ...data, operator_id: operator_member?.user_id }),
       type: data.type,
     };
-    Bot.makeLog('info', `[Group: ${data.group_name}(${data.group_id}] 新增群员：${data.nickname}(${data.user_id}) ${data.isinvite ? '邀请人: ' + data.invitor_name + '(' + data.invitor + ')' : ''}`, id);
+    Bot.makeLog('info', `[Group: ${data?.group_name}(${data.group_id}] 新增群员：${data.nickname}(${data.user_id}) ${data.isinvite ? '邀请人: ' + data.invitor_name + '(' + data.invitor + ')' : ''}`, id);
     Bot.em(data.type, data);
   }
 
@@ -3421,7 +3422,7 @@ const adapter = new (class SecludedAdapter {
       ...data,
       ...member,
     };
-    Bot.makeLog('info', `[Group: ${data.group_name}(${data.group_id}] ${data.nickname}(${data.user_id}) 离开了群 ${data.isoperate ? '操作人: ' + data.operator_name + '(' + data.operator_id + ')' : ''}`, id);
+    Bot.makeLog('info', `[Group: ${data?.group_name}(${data.group_id}] ${data.nickname}(${data.user_id}) 离开了群 ${data.isoperate ? '操作人: ' + data.operator_name + '(' + data.operator_id + ')' : ''}`, id);
     Bot.em(data.type, data);
     await Bot.sleep(30000);
     Bot[id].gml?.get(data.group_id)?.delete(data.user_id);
@@ -3634,7 +3635,7 @@ const adapter = new (class SecludedAdapter {
       ...data,
     };
     if (data.user_id) Bot.em(data.type, data);
-    if (data.user_id) Bot.makeLog('info', `[Group: ${data.group_name}(${data.group_id}) Member: ${data?.sender?.card}(${data.user_id})]${data.sign_text}`, id);
+    if (data.user_id) Bot.makeLog('info', `[Group: ${data?.group_name}(${data.group_id}) Member: ${data?.sender?.card}(${data.user_id})]${data.sign_text}`, id);
   }
 
   notice_group_entrance(id, data) {
@@ -3643,7 +3644,7 @@ const adapter = new (class SecludedAdapter {
       ...data,
     };
     if (data.user_id) Bot.em(data.type, data);
-    if (data.user_id) Bot.makeLog('info', `[Group: ${data.group_name}(${data.group_id}) Member: ${data?.sender?.card}(${data.user_id})] 进入了群聊，装扮Url: ${data.url}`, id);
+    if (data.user_id) Bot.makeLog('info', `[Group: ${data?.group_name}(${data.group_id}) Member: ${data?.sender?.card}(${data.user_id})] 进入了群聊，装扮Url: ${data.url}`, id);
   }
 
   notice_group_recall(id, data) {
@@ -3652,7 +3653,7 @@ const adapter = new (class SecludedAdapter {
       ...data,
     };
     Bot.em(data.type, data);
-    Bot.makeLog('info', `[Group: ${data.group_name}(${data.group_id})] ${data.operator_name}(${data.operator_id}) ${data.operator_id === data.user_id ? '撤回了一条消息' : `撤回了 ${data.nickname}(` + data.user_id + ')的消息'}(seq: ${data.seq}) ${data.tip}`, id);
+    Bot.makeLog('info', `[Group: ${data?.group_name}(${data.group_id})] ${data.operator_name}(${data.operator_id}) ${data.operator_id === data.user_id ? '撤回了一条消息' : `撤回了 ${data.nickname}(` + data.user_id + ')的消息'}(seq: ${data.seq}) ${data.tip}`, id);
   }
 
   notice_group_ban(id, data) {
@@ -3664,7 +3665,7 @@ const adapter = new (class SecludedAdapter {
     if (isallmute) Bot[id].gl.get(data.group_id).all_muted = true;
     if (data.user_id === id) Bot[id].gl.get(data.group_id).shutup_time_me = data.duration;
     Bot.em(data.type, data);
-    Bot.makeLog('info', `[Group: ${data.group_name}(${data.group_id})] ${isallmute ? `${data.operator_name}(${data.operator_id}) 开启了全体禁言` : data.user_id === 0 && data.duration === 0 ? `${data.operator_name}(${data.operator_id}) 关闭了全体禁言` : `${data.operator_name}(${data.operator_id}) 禁言了 ${data.nickname}(${data.user_id}) ${data.duration} 秒`}`, id);
+    Bot.makeLog('info', `[Group: ${data?.group_name}(${data.group_id})] ${isallmute ? `${data.operator_name}(${data.operator_id}) 开启了全体禁言` : data.user_id === 0 && data.duration === 0 ? `${data.operator_name}(${data.operator_id}) 关闭了全体禁言` : `${data.operator_name}(${data.operator_id}) 禁言了 ${data.nickname}(${data.user_id}) ${data.duration} 秒`}`, id);
   }
 
   notice_group_poke(id, data) {
@@ -3677,7 +3678,7 @@ const adapter = new (class SecludedAdapter {
     data.target_name = Bot[id].gml.get(data.group_id)?.get(data.target_id)?.nickname || '';
     data.operator_name = Bot[id].gml.get(data.group_id)?.get(data.operator_id)?.nickname || '';
     Bot.em(data.type, data);
-    Bot.makeLog('info', `[Group: ${data.group_name}(${data.group_id})] ${data.operator_name}(${data.operator_id}) ${data.alt_str1} ${data.target_name}(${data.target_id})`, id);
+    Bot.makeLog('info', `[Group: ${data?.group_name}(${data.group_id})] ${data.operator_name}(${data.operator_id}) ${data.alt_str1} ${data.target_name}(${data.target_id})`, id);
   }
 
   system_offline(id, data, send = Bot.sendMasterMsg.bind(Bot)) {
