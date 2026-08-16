@@ -509,7 +509,7 @@ const adapter = new (class SecludedAdapter {
         1281: {
           1: id,
           2: 0,
-          3: 537320212,
+          3: Bot[id].apk.subid,
           4: 1,
           6: 3,
           7: [10, 21],
@@ -3131,7 +3131,7 @@ const adapter = new (class SecludedAdapter {
     if (data?.source) data.getReply = async () => (await this.getMsg(id, data.source.seq, 1, { dm: false, ...data, id: data.group_id, isGroup: true }))[0];
     Bot.em(`${data.post_type}.${data.message_type}.${data.sub_type}`, data);
     data.bot.stat.recv_msg_cnt++;
-    Bot.makeLog('info', `recv from: [Group: ${data.group_name}(${data.group_id}), Member: ${data.sender.card || data.sender.nickname}(${data.sender.user_id})] ` + data.parsed.content, id);
+    Bot.makeLog('info', `recv from: [Group: ${data?.group_name}(${data.group_id}), Member: ${data.sender.card || data.sender.nickname}(${data.sender.user_id})] ` + data.parsed.content, id);
   }
 
   async getallMemberinfo(id, group_id, force = false) {
@@ -3340,7 +3340,8 @@ const adapter = new (class SecludedAdapter {
   }
 
   async Getuserinfo(id, uid) {
-    const ids = [101, 102, 105, 20002, 20011, 20026, 20037, 27394, 27406];
+    const ids = [101, 102, 105, 20002, 20011, 20026, 20037, 27394, 27406, 20009, 20014];
+    const isUID = typeof uid === "string" && uid.startsWith("u_");
     const body = {
       1: 4065,
       2: 2,
@@ -3350,16 +3351,18 @@ const adapter = new (class SecludedAdapter {
           1: ids,
         },
       },
-      12: 0,
+      12: isUID ? 0 : 1,
     };
     const data = await this.sendUni(id, 'OidbSvcTrpcTcp.0xfe1_2', pb.encode(body));
-    let avatarTimestamp, signature, level, nickname, mail, regTimestamp, age, QID;
+    let avatarTimestamp, signature, level, nickname, mail, regTimestamp, age, QID, sex, isallow;
     if (data[3] === 0) {
       const payload = data[4];
       const user_id = Number(payload[1][3]);
       for (const i of payload[1][2][1]) {
         if (i[1] === 105) level = i[2];
         if (i[1] === 20026) regTimestamp = i[2] * 1000;
+        if (i[1] === 20009) sex = Number(i[2]) === 1 ? 'male' : Number(i[2]) === 2 ? 'female' : 'unknown';
+        if (i[1] === 20009) isallow = Number(i[2]) === 1 ? true : false;
         if (i[1] === 20037) {
           const isobj = isObject(i[2]);
           age = !isobj ? i[2] : '隐藏';
@@ -3383,7 +3386,7 @@ const adapter = new (class SecludedAdapter {
       }
       return {
         user_id,
-        user_uid: uid,
+        user_uid: isUID ? uid : (this.global_uin2uid.get(uid)?.user_uid || ''),
         avatarTimestamp,
         signature,
         level,
@@ -3392,6 +3395,8 @@ const adapter = new (class SecludedAdapter {
         regTimestamp,
         age,
         qid: QID,
+        sex,
+        isallow,
       };
     }
     return {};

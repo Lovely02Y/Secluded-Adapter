@@ -357,14 +357,14 @@ export class GroupMessage extends Message {
     const group = this.nt ? proto[1][8] : proto[1][9];
     if (this.nt) {
       this.group_id = group[1] || 0;
-      this.group_name = group[7]?.toString() || '';
+      this.group_name = group[7]?.toString() || Bot[client].gl?.get(group[1] || 0)?.group_name || '';
       this.block = group[2] === 127;
       this.sender.user_id = proto[1][1];
       this.sender.user_uid = proto[1][2]?.toString() || '';
       this.sender.sub_id = proto[1][4];
     } else {
       this.group_id = group[1] || 0;
-      this.group_name = group[8]?.toString() || '';
+      this.group_name = group[8]?.toString() || Bot[client].gl?.get(group[1] || 0)?.group_name || '';
       this.block = group[2] === 127;
       this.sender.user_id = proto[1][1];
       this.sender.sub_id = proto[1][11];
