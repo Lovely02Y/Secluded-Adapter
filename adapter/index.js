@@ -73,7 +73,7 @@ function int32ip2str(ip) {
   return [ip & 0xff, (ip >> 8) & 0xff, (ip >> 16) & 0xff, (ip >> 24) & 0xff].join('.');
 }
 
-const QQ_domains_lists = ['qun', 'aq', 'connect', 'docs', 'game', 'gamecenter', 'haoma', 'id', 'kg', 'mail', 'mma', 'office', 'openmobile', 'qqweb', 'qzone', 'ti', 'v', 'vip', 'y', 'pay', 'now', 'q', 'weiyun'].map((item) => item + '.qq.com');
+const QQ_domains_lists = ['qun', 'aq', 'connect', 'docs', 'game', 'gamecenter', 'haoma', 'id', 'kg', 'mail', 'mma', 'office', 'openmobile', 'qqweb', 'qzone', 'ti', 'v', 'vip', 'y', 'pay', 'now', 'q', 'weiyun'].map((item) => item + '.qq.com').concat(['tenpay.com']);;
 
 const adapter = new (class SecludedAdapter {
   constructor() {
