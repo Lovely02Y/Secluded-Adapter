@@ -3,26 +3,8 @@ import { facemap, FACE_OLD_BUF } from './parser.js';
 import { Image } from './image.js';
 import { ChainElemTypes } from './elements.js';
 import pb from './protobuf/index.js';
-import makeConfig from '../../../lib/plugins/config.js';
 import { parseDmMessageId, parseGroupMessageId } from './message.js';
-
-const { config, configSave } = await makeConfig(
-  'Secluded',
-  {
-    tips: '',
-    permission: 'master',
-    bot: {},
-    http_url: 'http://127.0.0.1:80',
-    ws_url: 'ws://127.0.0.1:24804',
-    http_secretToken: null,
-    ws_secretToken: 'SecretToken',
-    token: [],
-    maxConcurrent: 6,
-  },
-  {
-    tips: ['欢迎使用 TRSS-Yunzai Secluded Plugin ! 作者：Senior Horikawa', '参考：https://github.com/Lovely02Y/Secluded-Adapter'],
-  }
-);
+import { config } from '../adapter/config.js';
 
 function rand2uuid(rand) {
   return (16777216n << 32n) | BigInt(rand);
@@ -30,15 +12,18 @@ function rand2uuid(rand) {
 
 const EMOJI_NOT_ENDING = ['\uD835', '\uD83C', '\uD83D', '\uD83E', '\u200D'];
 const EMOJI_NOT_STARTING = ['\uFE0F', '\u200D', '\u20E3'];
+
 const AT_BUF = Buffer.from([0, 1, 0, 0, 0]);
 const BUF0 = Buffer.alloc(0);
 const BUF1 = Buffer.from([1]);
 const BUF2 = Buffer.alloc(2);
+
 function RandomInt(num1, num2) {
   const min = Math.min(num1, num2);
   const max = Math.max(num1, num2);
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
 function PB_RESERVER() {
   const bubble_id = config?.bot?.bubble_rand ? RandomInt(2000000, 2025658) : config?.bot?.bubble_id || 0;
   const PB_RESERVER = {
@@ -102,6 +87,7 @@ const PB_FACE_RESERVER = {
 };
 
 const random = (a, b) => Math.floor(Math.random() * (b - a) + a);
+
 /** 将消息元素转换为protobuf */
 export class Converter {
   constructor(client, content, ext) {

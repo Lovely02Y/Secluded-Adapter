@@ -3,7 +3,7 @@ logger.info(logger.yellow('- 正在加载 Secluded 适配器插件'));
 
 import crypto from 'crypto';
 import pb from '../model/protobuf/index.js';
-import makeConfig from '../../../lib/plugins/config.js';
+import { config, configSave } from './config.js';
 import axios from 'axios';
 import { PrivateMessage, GroupMessage, genDmMessageId, parseDmMessageId, genGroupMessageId, parseGroupMessageId } from '../model/message.js';
 import { Converter } from '../model/converter.js';
@@ -31,23 +31,6 @@ const RandomUInt = () => crypto.randomBytes(4).readUInt32BE();
 const gunzip = promisify(_gunzip);
 const gzip = promisify(_gzip);
 
-const { config, configSave } = await makeConfig(
-  'Secluded',
-  {
-    tips: '',
-    permission: 'master',
-    bot: {},
-    http_url: 'http://127.0.0.1:80',
-    ws_url: 'ws://127.0.0.1:24804',
-    http_secretToken: null,
-    ws_secretToken: 'SecretToken',
-    token: [],
-    maxConcurrent: 6,
-  },
-  {
-    tips: ['欢迎使用 TRSS-Yunzai Secluded Plugin ! 作者：Senior Horikawa', '参考：https://github.com/Lovely02Y/Secluded-Adapter'],
-  }
-);
 
 async function getImageSize(file) {
   try {
@@ -109,6 +92,7 @@ const adapter = new (class SecludedAdapter {
     this.queue = []; // 等待队列
     this.global_uin2uid = new Map();
     this.global_uid2uin = new Map();
+    this.config = config;
   }
 
   get Proto() {
@@ -2162,6 +2146,7 @@ const adapter = new (class SecludedAdapter {
     const deviceinfo = await this.Getdeviceinfo(Number(id));
     Bot[id] = {
       adapter: this,
+      config: config,
       sig: {
         bigdata: {},
         skey: '',
