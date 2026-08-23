@@ -368,6 +368,68 @@ export class Parser {
     }
   }
 
+  parseRedPacketElem(proto) {
+    let elem;
+    proto = proto[1].toJSON()
+    const titleNode = proto[3] || proto['3'];
+    const listid = proto[9] ?? proto['9'];
+    const authkey = proto[10] ?? proto['10'];
+    const channel = proto[19] ?? proto['19'];
+    const resourceType = proto[12] ?? proto['12'];
+    const voiceFlag = titleNode?.[21]?.[3] ?? titleNode?.['21']?.['3'];
+    const TargetUin = this.extractTargetUin(proto?.[20] ?? proto?.['20']);
+    const nodeString = (v) => (v == null ? undefined : String(v));
+    const skinType = this.extractSkinType(proto?.[21] ?? proto?.['21']);
+    const title = String(titleNode?.[3] || titleNode?.['3'] || '');
+    elem = {
+      type: 'RedPacket',
+      title,
+      listid,
+      authkey,
+      channel,
+      resourceType: nodeString(resourceType),
+      voiceFlag: nodeString(voiceFlag),
+      agreement: nodeString(proto?.[21]?.[3] ?? proto?.['21']?.['3']),
+      fromHBList: nodeString(proto?.[21]?.[7] ?? proto?.['21']?.['7']),
+      hbFlag: nodeString(proto?.[21]?.[8] ?? proto?.['21']?.['8']),
+      TargetUin,
+      skin_id: nodeString(skinType),
+    };
+
+    const brief = '[QQ 红包]' + title;
+    return { elem, brief };
+  }
+
+  extractSkinType(v) {
+    if (!v || typeof v !== 'object') return 0;
+    const raw = v[5] ?? v['5'];
+    if (!raw) return 0;
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return parsed?.skin_type == null ? 0 : String(parsed.skin_type);
+    } catch {
+      return 0;
+    }
+  }
+
+  extractTargetUin(value) {
+    const result = [];
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const num = Number(item);
+        if (!Number.isNaN(num)) {
+          result.push(num);
+        }
+      }
+    } else {
+      const num = Number(value);
+      if (!Number.isNaN(num)) {
+        result.push(num);
+      }
+    }
+    return result;
+  }
+
   /** 解析: xml, json, ptt, video, flash, file, shake, poke */
   parseExclusiveElem(type, proto) {
     let elem;
@@ -429,6 +491,11 @@ export class Parser {
         };
         brief = '视频';
         this.content = `{video:${elem.fid}}`;
+        break;
+      case 24:
+        const RedPacket = this.parseRedPacketElem(proto);
+        elem = RedPacket.elem;
+        brief = RedPacket.brief;
         break;
       case 5: //transElem
         const trans = pb.decode(proto[2].toBuffer().slice(3))[7][2];
@@ -768,6 +835,7 @@ export class Parser {
             case 5: //transElem
             case 12: //xml
             case 19: //video
+            case 24: //redpacket
             case 51: //json
               this.parseExclusiveElem(type, proto);
               break;
