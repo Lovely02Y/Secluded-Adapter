@@ -271,7 +271,51 @@ const adapter = new (class SecludedAdapter {
         {
           1: 1,
           2: {
-            1: [102, 103, 20002, 27394, 20037, 20009],
+            1: [
+              42432,
+              42362,
+              45160,
+              27201,
+              47192,
+              27521,
+              27238,
+              41756,
+              42122,
+              42241,
+              42121,
+              27235,
+              42344,
+              62026,
+              42354,
+              27375,
+              41305,
+              41812,
+              40410,
+              42249,
+              42031,
+              27225,
+              20031,
+              27254,
+              63020,
+              42240,
+              106,
+              42315,
+              102,
+              103,
+              45161,
+              41757,
+              20037,
+              20009,
+              20002,
+              27041,
+              27025,
+              20016,
+              20011,
+              40530,
+              63019,
+              27224,
+              27394
+            ],
           },
         },
         {
@@ -426,8 +470,8 @@ const adapter = new (class SecludedAdapter {
         12: 1,
       };
       const payload = await this.sendUni(id, 'OidbSvcTrpcTcp.0x102a_1', pb.encode(body), false);
-      const client_key = payload[4][3];
-      const expired = payload[4][4] + Date.now() / 1000 - 600;
+      const client_key = payload?.[4]?.[3]?.toString();
+      const expired = payload?.[4]?.[4] + Date.now() / 1000 - 600;
       Bot[id].sig.client_key_info = {
         client_key,
         time: expired,
@@ -2361,7 +2405,8 @@ const adapter = new (class SecludedAdapter {
       12: 1,
     };
     const data = await this.sendUni(id, 'OidbSvcTrpcTcp.0x102a_0', pb.encode(body));
-    let pskeys = data[4][1];
+    let pskeys = data[4]?.[1];
+    if (!pskeys) return {}
     if (!Array.isArray(pskeys)) pskeys = [pskeys];
     for (let i of pskeys) {
       const pskey = i[2];
@@ -3188,14 +3233,14 @@ const adapter = new (class SecludedAdapter {
   async dealGroup(id, cmd, payload) {
     if (!Bot.uin.includes(id)) await this.connect(id);
     let gml_count = 0;
-    const data = pb.decode(payload)?.toJSON()[4];
+    const data = pb.decode(payload)[4];
     const list = Array.isArray(data[2]) ? data[2] : [data[2]];
     const group_id = Number(data[1]);
     const map = new Map();
     const map2 = new Map();
     for (const o of list) {
-      let user_id = o?.[1]?.[4],
-        user_uid = o?.[1]?.[2].toString(),
+      let user_id = Number(o?.[1]?.[4]),
+        user_uid = o?.[1]?.[2]?.toString(),
         card = (o[11]?.[2] || o[10])?.toString(),
         title = (o[17] || '')?.toString(),
         nickname = o[10]?.toString(),
@@ -3212,9 +3257,10 @@ const adapter = new (class SecludedAdapter {
         last_sent_time = o[101];
       if (typeof card === 'string' && card === '[object Object]') card = nickname;
       const role = o[107] === 1 ? 'owner' : o[107] === 2 ? 'admin' : 'member';
+      const sex = Bot[id]?.fl.has(user_id) ? Bot[id]?.pickFriend(user_id)?.info?.sex : 'unknown'
       const Member_data = {
         user_id,
-        sex: 'unknown',
+        sex,
         nickname,
         card,
         role,
@@ -3246,8 +3292,8 @@ const adapter = new (class SecludedAdapter {
   async dealFriend(id, cmd, payload) {
     if (!Bot.uin.includes(id)) await this.connect(id);
     let fl_count = 0;
-    const data = pb.decode(payload)?.toJSON()[4];
-    const list = Array.isArray(data[101]) ? data[101] : [data[101]];
+    const data = pb.decode(payload)[4];
+    const list = Array.isArray(data?.[101]) ? data?.[101] : [data?.[101]];
     const class_Map = new Map();
     for (let i of Array.isArray(data[102]) ? data[102] : [data[102]]) {
       const name = String(i[2]),
@@ -3255,19 +3301,22 @@ const adapter = new (class SecludedAdapter {
       class_Map.set(val, name);
     }
     for (let o of list) {
-      let user_id = o[3],
-        user_uid = o[1],
+      let user_id = Number(o[3]),
+        user_uid = o[1]?.toString(),
         nickname,
         signature,
         remark,
         qid,
         age = 0,
+        mail,
         sex = 'unknown';
       const infoArray = o[10001];
       if (!Array.isArray(infoArray)) continue;
       const targetObj = infoArray.find((item) => item[1] === 1);
       if (!targetObj || !targetObj[2]) continue;
-      const contentArray = [...(Array.isArray(targetObj[2]?.[2]) ? targetObj[2][2] : []), ...(Array.isArray(targetObj[2]?.[1]) ? targetObj[2][1] : [])];
+      const arr1 = Array.isArray(targetObj[2][1]) ? targetObj[2][1] : [];
+      const arr2 = Array.isArray(targetObj[2][2]) ? targetObj[2][2] : [];
+      const contentArray = arr2.concat(arr1);
       for (let content of contentArray) {
         const name = Number(content[1]),
           val = String(content[2]?.toString());
@@ -3290,6 +3339,9 @@ const adapter = new (class SecludedAdapter {
           case 20009:
             sex = Number(val) === 1 ? 'male' : Number(val) === 2 ? 'female' : 'unknown';
             break;
+          case 20011:
+            mail = val || '';
+            break;
         }
       }
       if (typeof remark === 'string' && remark === '[object Object]') remark = nickname;
@@ -3304,6 +3356,7 @@ const adapter = new (class SecludedAdapter {
         qid,
         age,
         sex,
+        mail,
         update_time: Math.floor(Date.now() / 1000),
       };
 

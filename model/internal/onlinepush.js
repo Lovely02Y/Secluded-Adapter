@@ -205,7 +205,7 @@ function ntPush732(proto, sub_type, id) {
         break;
     }
   } catch (error) {
-    logger.error(
+    logger.info(
       `[push732]事件处理异常：${sub_type},${JSON.stringify(
         proto?.toJSON(),
         (key, value) => {
@@ -390,7 +390,7 @@ function ntPush528(uin, sub_type, proto, proto2, id) {
         );
     }
   } catch (error) {
-    logger.error(
+    logger.info(
       `[push528]事件处理异常：${sub_type},${JSON.stringify(
         proto2?.toJSON(),
         (key, value) => {
