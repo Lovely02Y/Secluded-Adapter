@@ -396,7 +396,7 @@ export class Parser {
       skin_id: nodeString(skinType),
     };
 
-    const brief = '[QQ 红包]' + title;
+    const brief = '[QQ红包]' + title;
     return { elem, brief };
   }
 
