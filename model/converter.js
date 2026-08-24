@@ -24,7 +24,7 @@ function RandomInt(num1, num2) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function PB_RESERVER() {
+function PB_RESERVER(word_chain = false) {
   const bubble_id = config?.bot?.bubble_rand ? RandomInt(2000000, 2025658) : config?.bot?.bubble_id || 0;
   const PB_RESERVER = {
     37: {
@@ -34,6 +34,7 @@ function PB_RESERVER() {
         15: config?.bot?.font_id || 0,
         31: 0,
         41: 0,
+        114: word_chain ? 114514 : null
       },
     },
   };
@@ -120,7 +121,7 @@ export class Converter {
     }
     if (!this.elems.length && !this.rich[4]) throw new Error('empty message');
     if (!this.is_longMsg) {
-      const RESERVER = PB_RESERVER();
+      const RESERVER = PB_RESERVER(config.bot?.word_chain && !this.ext?.dm && this.is_chain);
       this.elems.push(RESERVER.PB_RESERVER);
       this.elems.push(RESERVER.PB_Bubble_RESERVER);
     }
@@ -652,7 +653,7 @@ export class Converter {
 
   _pushFragment(proto) {
     if (proto.length > 0) {
-      proto.push(PB_RESERVER);
+      proto.push(PB_RESERVER().PB_RESERVER);
       this.fragments.push(
         pb.encode({
           2: proto,
