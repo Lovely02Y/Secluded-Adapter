@@ -34,7 +34,7 @@ function PB_RESERVER(word_chain = false) {
         15: config?.bot?.font_id || 0,
         31: 0,
         41: 0,
-        114: word_chain ? 114514 : null
+        114: word_chain ? 114514 : null,
       },
     },
   };

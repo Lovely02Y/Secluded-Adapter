@@ -100,8 +100,18 @@ const adapter = new (class SecludedAdapter {
   }
 
   async Http_Sec_Send(data) {
-    const response = await axios.post(config.http_url + '/send?' + `token=${config.http_secretToken}`, data);
-    return response.data;
+    let retry = 2,
+      wait = 400;
+    while (true) {
+      try {
+        const res = await axios.post(`${config.http_url}/send?token=${config.http_secretToken}`, data);
+        return res.data;
+      } catch (e) {
+        if (retry-- <= 0) throw e;
+        await new Promise((r) => setTimeout(r, wait));
+        wait *= 2.4;
+      }
+    }
   }
 
   async sendUni(id, cmd, body, isToJson = true, raw = false) {

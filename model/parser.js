@@ -370,7 +370,7 @@ export class Parser {
 
   parseRedPacketElem(proto) {
     let elem;
-    proto = proto[1].toJSON()
+    proto = proto[1].toJSON();
     const titleNode = proto[3] || proto['3'];
     const listid = proto[9] ?? proto['9'];
     const authkey = proto[10] ?? proto['10'];
