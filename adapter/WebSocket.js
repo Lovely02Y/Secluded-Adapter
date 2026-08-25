@@ -1,10 +1,10 @@
 import { default as Sec_WebSocket } from 'ws';
-import sec from './index.js';
 import crypto from 'crypto';
-let hasws = false;
+import { config } from './config.js';
+
 class WebSocketClient {
   constructor() {
-    this.config = sec.config;
+    this.config = config;
     this.echo = new Map();
     this.timeout = 60000;
     this.sec_ws = null;
@@ -13,12 +13,13 @@ class WebSocketClient {
     this.reconnectDelay = 3000;
     this.token = null;
     this.seq = Math.floor(10000 + (crypto.randomBytes(2).readUInt16BE() / 65535) * 50001);
-    this.maxConcurrent = this.config.maxConcurrent; // 最大并发数
+    this.maxConcurrent = 128; // 最大并发数
     this.currentConcurrent = 0; // 当前并发数
     this.queue = []; // 等待队列
     this.ws_url = this.config.ws_url;
     this.ws_secretToken = this.config.ws_secretToken;
     this.name = 'Secluded';
+    this.adapter = Bot.adapter?.find((adapter) => adapter.name === 'Secluded') || null;
     this.init();
   }
 
@@ -27,11 +28,10 @@ class WebSocketClient {
    */
   init() {
     try {
-      if (hasws) return false;
-      hasws = true;
-      setTimeout(async () => {
-        hasws = false;
-      }, 1500);
+      if (this.sec_ws && (this.sec_ws.readyState === Sec_WebSocket.OPEN || this.sec_ws.readyState === Sec_WebSocket.CONNECTING)) {
+        return;
+      }
+      if (!this.adapter) this.adapter = Bot.adapter?.find((adapter) => adapter.name === 'Secluded') || null;
       this.sec_ws = new Sec_WebSocket(this.ws_url, {
         headers: {
           Authorization: `Bearer ${this.config.ws_secretToken}`,
@@ -86,40 +86,31 @@ class WebSocketClient {
    * 接收到消息
    */
   onMessage(data) {
-    try {
-      let message;
-      if (Buffer.isBuffer(data)) {
-        message = data.toString('utf8');
-      } else if (typeof data === 'string') {
-        message = data;
-      } else if (data instanceof ArrayBuffer) {
-        message = Buffer.from(data).toString('utf8');
-      } else {
-        message = String(data);
+    setImmediate(() => {
+      if (!this.adapter) this.adapter = Bot.adapter?.find((adapter) => adapter.name === 'Secluded') || null;
+      try {
+        let message;
+        if (Buffer.isBuffer(data)) {
+          message = data.toString('utf8');
+        } else if (typeof data === 'string') {
+          message = data;
+        } else if (data instanceof ArrayBuffer) {
+          message = Buffer.from(data).toString('utf8');
+        } else {
+          message = String(data);
+        }
+        const parsedData = JSON.parse(message);
+        if (parsedData.seq && this.echo.has(parsedData.seq)) {
+          const cache = this.echo.get(parsedData.seq);
+          if (cache) cache.resolve(parsedData);
+          return;
+        }
+
+        this.adapter.handleMessage(parsedData);
+      } catch (error) {
+        Bot.makeLog('error', [`[Secluded] 消息解析错误`, error], 'Secluded');
       }
-      const parsedData = JSON.parse(message);
-      if (parsedData.seq && this.echo.has(parsedData.seq)) {
-        const cache = this.echo.get(parsedData.seq);
-        if (cache) cache.resolve(parsedData);
-        return;
-      }
-      if (parsedData?.cmd === 'Sync' && parsedData?.data?.list) {
-        const list = parsedData?.data?.list;
-        Promise.all(
-          list
-            .filter((item) => {
-              const num = Number(item);
-              return num !== 0 && num !== 1000000;
-            })
-            .map((item) => sec.adapter.connect(Number(item)))
-        );
-        return;
-      }
-      
-      sec.adapter.handleMessage(parsedData);
-    } catch (error) {
-      Bot.makeLog('error', [`[Secluded] 消息解析错误`, error], 'Secluded');
-    }
+    });
   }
 
   /**
@@ -248,6 +239,7 @@ class WebSocketClient {
     Bot.makeLog('info', [`[${this.name}]`, `尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`], 'Secluded');
 
     setTimeout(async () => {
+      this.close();
       this.init();
     }, this.reconnectDelay * this.reconnectAttempts);
   }
@@ -335,7 +327,8 @@ const wsClient = new WebSocketClient();
 
 // 导出连接方法
 export const connect = () => {
-  if (!wsClient.isConnected()) {
+  const state = wsClient.getStatus();
+  if (state === 'DISCONNECTED' || state === 'UNKNOWN') {
     wsClient.init();
   }
   return wsClient;

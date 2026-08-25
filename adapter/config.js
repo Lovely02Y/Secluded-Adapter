@@ -11,7 +11,7 @@ const { config, configSave } = await makeConfig(
     http_secretToken: null,
     ws_secretToken: 'SecretToken',
     token: [],
-    maxConcurrent: 6,
+    maxConcurrent: 128,
     enableRedBag: false,
     enableRedBagQQ: [],
     fastRedBag: false,

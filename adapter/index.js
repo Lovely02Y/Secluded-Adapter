@@ -26,6 +26,7 @@ import { Image } from '../model/image.js';
 import schedule from 'node-schedule';
 import { segment } from '../model/elements.js';
 import { UploadflashTransfer } from '../model/internal/UploardFlashTransfer.js';
+import sec_ws from './WebSocket.js';
 
 const RandomUInt = () => crypto.randomBytes(4).readUInt32BE();
 const gunzip = promisify(_gunzip);
@@ -87,6 +88,7 @@ const adapter = new (class SecludedAdapter {
     this.reconnectDelay = 3000;
     this.token = null;
     this.seq = 1;
+    this.Seq = Math.floor(10000 + (crypto.randomBytes(2).readUInt16BE() / 65535) * 50001);
     this.maxConcurrent = config.maxConcurrent; // 最大并发数
     this.currentConcurrent = 0; // 当前并发数
     this.queue = []; // 等待队列
@@ -115,6 +117,7 @@ const adapter = new (class SecludedAdapter {
   }
 
   async sendUni(id, cmd, body, isToJson = true, raw = false) {
+    const Seq = this.Seq++;
     const dat = body.toString('hex'),
       data = {
         cmd: 'SendOicqMsg',
@@ -125,18 +128,18 @@ const adapter = new (class SecludedAdapter {
             Reply: 'Reply',
             Cmd: cmd,
             Dat: dat,
+            Seq,
           },
         ],
       };
-    const rsp = await this.Http_Sec_Send(data.data);
-    const payload = rsp?.Dat || rsp?.[0]?.Dat;
+    const rsp = await this.Ws_send_Sec(data.data, Seq);
+    const payload = rsp?.Dat || rsp?.[0]?.Dat || rsp?.data?.[0]?.Dat;
     if (raw) return payload;
     if (isToJson) return pb.decode(payload)?.toJSON();
     return pb.decode(payload);
   }
 
-  async sendApi(data) {
-    const { default: sec_ws } = await import('./WebSocket.js');
+  async Ws_send_Sec(data) {
     data = {
       cmd: 'SendOicqMsg',
       rsp: true,
@@ -2277,8 +2280,6 @@ const adapter = new (class SecludedAdapter {
       setGroupLeave: (group_id) => this.pickGroup(id, group_id).quit(),
       setModel: this.setModel.bind(this, id),
 
-      sendApi: this.sendApi.bind(this),
-
       addGroup: this.addGroup.bind(this, id),
       getAddGroupSetting: this.getAddGroupSetting.bind(this, id),
 
@@ -2573,7 +2574,6 @@ const adapter = new (class SecludedAdapter {
   }
 
   async sendHeartbeat(event) {
-    const { default: sec_ws } = await import('./WebSocket.js');
     const authMessage = {
       cmd: 'SyncOicq',
       rsp: true,
@@ -2690,7 +2690,7 @@ const adapter = new (class SecludedAdapter {
 
   async thumbUp(id, times = 1, user_id, opts, remain = 0, sucs = 0) {
     const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid?.get(user_id)?.user_uid || this.global_uin2uid.get(user_id)?.user_uid, Uin: String(user_id), Value: String(times) }];
-    const rsp = await this.sendApi(data);
+    const rsp = await this.Ws_send_Sec(data);
     const suc = rsp.data[0].Value;
     if (rsp.data[0].No) {
       Bot.makeLog('warn', `[Friend: ${user_id}]点赞失败：${rsp.data[0].No}`, id);
