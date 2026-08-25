@@ -265,8 +265,8 @@ const adapter = new (class SecludedAdapter {
       const cacheTime = new Date(cachedData.time);
       const currentTime = new Date();
       const timeDiff = currentTime - cacheTime;
-      const randomExpire = 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
-      if (timeDiff < randomExpire) {
+      const expire = cachedData.expire || 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
+      if (timeDiff < expire) {
         return this.dealEvent(id, 'OidbSvcTrpcTcp.0xfd4_1', cachedData.data);
       }
     }
@@ -301,6 +301,7 @@ const adapter = new (class SecludedAdapter {
     const data = await this.sendOidbSvcTrpcTcp(id, 'OidbSvcTrpcTcp.0xfd4_1', body, false, true, false);
     const saveData = {
       time: new Date().toISOString(),
+      expire: 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000,
       data,
     };
     await fs.promises.mkdir(fileDir, { recursive: true });
@@ -351,8 +352,8 @@ const adapter = new (class SecludedAdapter {
       const cacheTime = new Date(cachedData.time);
       const currentTime = new Date();
       const timeDiff = currentTime - cacheTime;
-      const randomExpire = 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
-      if (timeDiff < randomExpire) {
+      const expire = cachedData.expire || 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
+      if (timeDiff < expire) {
         return await this.handleGroupsOperation(id, cachedData.data);
       }
     }
@@ -411,6 +412,7 @@ const adapter = new (class SecludedAdapter {
     const data = await this.sendOidbSvcTrpcTcp(id, 'OidbSvcTrpcTcp.0xfe5_2', body);
     const saveData = {
       time: new Date().toISOString(),
+      expire: 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000,
       data,
     };
     await fs.promises.mkdir(fileDir, { recursive: true });
@@ -3146,8 +3148,8 @@ const adapter = new (class SecludedAdapter {
         const cacheTime = new Date(cachedData.time);
         const currentTime = new Date();
         const timeDiff = currentTime - cacheTime;
-        const randomExpire = 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
-        if (timeDiff < randomExpire && !force) {
+        const expire = cachedData.expire || 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
+        if (timeDiff < expire && !force) {
           return this.dealEvent(id, 'OidbSvcTrpcTcp.0xfe7_3', cachedData.data);
         }
       } catch (error) {
@@ -3183,6 +3185,7 @@ const adapter = new (class SecludedAdapter {
     const data = await this.sendOidbSvcTrpcTcp(id, 'OidbSvcTrpcTcp.0xfe7_3', body, false, true);
     const saveData = {
       time: new Date().toISOString(),
+      expire: 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000,
       data,
     };
     await fs.promises.mkdir(fileDir, { recursive: true });
@@ -3191,9 +3194,7 @@ const adapter = new (class SecludedAdapter {
       JSON.stringify(
         saveData,
         (key, value) => {
-          if (typeof value === 'bigint') {
-            return value.toString() + 'n';
-          }
+          if (typeof value === 'bigint') return value.toString() + 'n';
           return value;
         },
         2
