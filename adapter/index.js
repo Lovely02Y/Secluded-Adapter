@@ -265,7 +265,7 @@ const adapter = new (class SecludedAdapter {
       const cacheTime = new Date(cachedData.time);
       const currentTime = new Date();
       const timeDiff = currentTime - cacheTime;
-      const randomExpire = 3600000 + Math.random() * 7200000;
+      const randomExpire = 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
       if (timeDiff < randomExpire) {
         return this.dealEvent(id, 'OidbSvcTrpcTcp.0xfd4_1', cachedData.data);
       }
@@ -338,7 +338,6 @@ const adapter = new (class SecludedAdapter {
       const group_data = { group_id, group_name, create_time, member_count, max_member_count, description, question, announcement, ownerUid, all_muted: false, shutup_time_me: false };
       Bot[id].gl.set(group_id, group_data);
       gl_count++;
-      await this.getallMemberinfo(id, group_id);
     }
     return gl_count;
   }
@@ -352,7 +351,7 @@ const adapter = new (class SecludedAdapter {
       const cacheTime = new Date(cachedData.time);
       const currentTime = new Date();
       const timeDiff = currentTime - cacheTime;
-      const randomExpire = 3600000 + Math.random() * 7200000;
+      const randomExpire = 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
       if (timeDiff < randomExpire) {
         return await this.handleGroupsOperation(id, cachedData.data);
       }
@@ -2312,9 +2311,9 @@ const adapter = new (class SecludedAdapter {
     this.getRkey(id);
     await this.GroupsOperation(id); // 群列表
     this.GetBigdata(id);
-    let totalUsers = 0;
-    for (let innerMap of Bot[id].gml.values()) totalUsers += innerMap.size;
-    Bot.makeLog('mark', `加载了${Bot[id].fl.size}个好友，${Bot[id].gl.size}个群, ${totalUsers}个群员`, id);
+    //let totalUsers = 0;
+    //for (let innerMap of Bot[id].gml.values()) totalUsers += innerMap.size;
+    Bot.makeLog('mark', `加载了${Bot[id].fl.size}个好友，${Bot[id].gl.size}个群`, id);
     Bot.makeLog('mark', `${this.name}(${this.id}) ${this.version} 已连接`, id);
     Bot.em(`connect.${id}`, { self_id: id });
     this.GetCookies(id);
@@ -3124,6 +3123,7 @@ const adapter = new (class SecludedAdapter {
     const raw_data = pb.decode(payload);
     if (!raw_data[1] || !raw_data[1]?.[3]) return false;
     let data = new GroupMessage(id, raw_data[1], true);
+    if (!Bot[id].gml.has(data.group_id)) this.getallMemberinfo(id, data.group_id);
     ((data.self_id = id), (data.bot = Bot[id]), (data.isGroup = true));
     data.sender = {
       ...(Bot[id].gml?.get(data.group_id)?.get(data.user_id) || {}),
@@ -3146,7 +3146,7 @@ const adapter = new (class SecludedAdapter {
         const cacheTime = new Date(cachedData.time);
         const currentTime = new Date();
         const timeDiff = currentTime - cacheTime;
-        const randomExpire = 3600000 + Math.random() * 7200000;
+        const randomExpire = 6 * 3600 * 1000 + Math.random() * 12 * 3600 * 1000;
         if (timeDiff < randomExpire && !force) {
           return this.dealEvent(id, 'OidbSvcTrpcTcp.0xfe7_3', cachedData.data);
         }
