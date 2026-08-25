@@ -265,67 +265,27 @@ const adapter = new (class SecludedAdapter {
       const cacheTime = new Date(cachedData.time);
       const currentTime = new Date();
       const timeDiff = currentTime - cacheTime;
-      if (timeDiff < 3600000) {
+      const randomExpire = 3600000 + Math.random() * 7200000;
+      if (timeDiff < randomExpire) {
         return this.dealEvent(id, 'OidbSvcTrpcTcp.0xfd4_1', cachedData.data);
       }
     }
+    const seq = Math.floor(Date.now() / 100000000);
     const body = {
       2: 300,
-      4: 0,
+      3: Math.floor(Date.now() / 1000),
+      4: seq,
       5: {
-        1: 0,
+        1: Number(id),
       },
-      6: 0,
-      7: 0,
+      6: 1,
+      7: seq,
+      9: 1,
       10001: [
         {
           1: 1,
           2: {
-            1: [
-              42432,
-              42362,
-              45160,
-              27201,
-              47192,
-              27521,
-              27238,
-              41756,
-              42122,
-              42241,
-              42121,
-              27235,
-              42344,
-              62026,
-              42354,
-              27375,
-              41305,
-              41812,
-              40410,
-              42249,
-              42031,
-              27225,
-              20031,
-              27254,
-              63020,
-              42240,
-              106,
-              42315,
-              102,
-              103,
-              45161,
-              41757,
-              20037,
-              20009,
-              20002,
-              27041,
-              27025,
-              20016,
-              20011,
-              40530,
-              63019,
-              27224,
-              27394
-            ],
+            1: [42432, 42362, 45160, 27201, 47192, 27521, 27238, 41756, 42122, 42241, 42121, 27235, 42344, 62026, 42354, 27375, 41305, 41812, 40410, 42249, 42031, 27225, 20031, 27254, 63020, 42240, 106, 42315, 102, 103, 45161, 41757, 20037, 20009, 20002, 27041, 27025, 20016, 20011, 40530, 63019, 27224, 27394],
           },
         },
         {
@@ -361,6 +321,7 @@ const adapter = new (class SecludedAdapter {
     return pb.decode(data);
   }
 
+
   async handleGroupsOperation(id, data) {
     let gl_count = 0;
     const groups = Array.isArray(data[2]) ? data[2] : [data[2]];
@@ -374,7 +335,7 @@ const adapter = new (class SecludedAdapter {
         description = o[4][18] || '',
         question = o[4][19] || '',
         announcement = o[4][30];
-      const group_data = { group_id, group_name, create_time, member_count, max_member_count, description, question, announcement, ownerUid };
+      const group_data = { group_id, group_name, create_time, member_count, max_member_count, description, question, announcement, ownerUid, all_muted: false, shutup_time_me: false };
       Bot[id].gl.set(group_id, group_data);
       gl_count++;
       await this.getallMemberinfo(id, group_id);
@@ -391,7 +352,8 @@ const adapter = new (class SecludedAdapter {
       const cacheTime = new Date(cachedData.time);
       const currentTime = new Date();
       const timeDiff = currentTime - cacheTime;
-      if (timeDiff < 3600000) {
+      const randomExpire = 3600000 + Math.random() * 7200000;
+      if (timeDiff < randomExpire) {
         return await this.handleGroupsOperation(id, cachedData.data);
       }
     }
@@ -3184,7 +3146,8 @@ const adapter = new (class SecludedAdapter {
         const cacheTime = new Date(cachedData.time);
         const currentTime = new Date();
         const timeDiff = currentTime - cacheTime;
-        if (timeDiff < 3600000 && !force) {
+        const randomExpire = 3600000 + Math.random() * 7200000;
+        if (timeDiff < randomExpire && !force) {
           return this.dealEvent(id, 'OidbSvcTrpcTcp.0xfe7_3', cachedData.data);
         }
       } catch (error) {
@@ -3251,7 +3214,7 @@ const adapter = new (class SecludedAdapter {
     for (const o of list) {
       let user_id = Number(o?.[1]?.[4]),
         user_uid = o?.[1]?.[2]?.toString(),
-        card = (o[11]?.[2] || o[10])?.toString(),
+        card = (o?.[11]?.[2] || o?.[10] || '')?.toString(),
         title = (o[17] || '')?.toString(),
         nickname = o[10]?.toString(),
         shutup_time = o[102] || 0;
@@ -3267,7 +3230,7 @@ const adapter = new (class SecludedAdapter {
         last_sent_time = o[101];
       if (typeof card === 'string' && card === '[object Object]') card = nickname;
       const role = o[107] === 1 ? 'owner' : o[107] === 2 ? 'admin' : 'member';
-      const sex = Bot[id]?.fl.has(user_id) ? Bot[id]?.pickFriend(user_id)?.info?.sex : 'unknown'
+      const sex = Bot[id]?.fl.has(user_id) ? Bot[id]?.pickFriend(user_id)?.info?.sex : 'unknown';
       const Member_data = {
         user_id,
         sex,
