@@ -191,7 +191,7 @@ const adapter = new (class SecludedAdapter {
     for (const v of rkeys) {
       if (v[5] === 10) C2Crkey = v[1];
       if (v[5] === 20) Grouprkey = v[1];
-      expired = v[4] + v[2] - 120;
+      expired = Number(v?.[4] || 200) + Number(v?.[2] || 200) - 120;
     }
     Bot[id].sig.rkey_info = {
       10: {
@@ -206,7 +206,7 @@ const adapter = new (class SecludedAdapter {
 
   async getRkey(id, force = false) {
     try {
-      if (force || Date.now() / 1000 > Bot[id].sig.rkey_info.time) {
+      if (force || Math.floor(Date.now() / 1000) > Bot[id].sig.rkey_info.time) {
         const body = {
           1: {
             1: {
@@ -233,7 +233,7 @@ const adapter = new (class SecludedAdapter {
         for (const v of rkeys) {
           if (v[5] === 10) C2Crkey = v[1];
           if (v[5] === 20) Grouprkey = v[1];
-          expired = v[4] + v[2] - 120;
+          expired = Number(v?.[4] || 200) + Number(v?.[2] || 200) - 120;
         }
         Bot[id].sig.rkey_info = {
           10: {
@@ -438,7 +438,7 @@ const adapter = new (class SecludedAdapter {
   }
 
   async GetClientKey(id, force = false) {
-    if (force || Date.now() / 1000 > Bot[id].sig.client_key_info.time) {
+    if (force || Math.floor(Date.now() / 1000) > Bot[id].sig.client_key_info.time) {
       const body = {
         1: 4138,
         2: 1,
@@ -447,7 +447,7 @@ const adapter = new (class SecludedAdapter {
       };
       const payload = await this.sendUni(id, 'OidbSvcTrpcTcp.0x102a_1', pb.encode(body), false);
       const client_key = payload?.[4]?.[3]?.toString();
-      const expired = payload?.[4]?.[4] + Date.now() / 1000 - 600;
+      const expired = Number(payload?.[4]?.[4] || 3600) + Math.floor(Date.now() / 1000) - 600;
       Bot[id].sig.client_key_info = {
         client_key,
         time: expired,
@@ -2365,7 +2365,7 @@ const adapter = new (class SecludedAdapter {
     let pskeys_cache = [];
     for (let i of domain) {
       const existingPskey = Bot[id].sig.pskeys.get(i);
-      if (!force && existingPskey && existingPskey.pskey_time > Date.now() / 1000) pskeys_cache.push(existingPskey);
+      if (!force && existingPskey && existingPskey.pskey_time > Math.floor(Date.now() / 1000)) pskeys_cache.push(existingPskey);
       if (pskeys_cache.length === domain.length) return pskeys_cache;
     }
     pskeys_cache = [];
@@ -2384,7 +2384,7 @@ const adapter = new (class SecludedAdapter {
     if (!Array.isArray(pskeys)) pskeys = [pskeys];
     for (let i of pskeys) {
       const pskey = i[2];
-      const expireTime = Date.now() / 1000 + 1800;
+      const expireTime = Math.floor(Date.now() / 1000) + 7200;
       const pskey_data = {
         domain: i[1],
         p_skey: pskey,
@@ -2411,7 +2411,7 @@ const adapter = new (class SecludedAdapter {
       if (Bot[id].sig.pskeys.size > 0) {
         const cookies = Bot[id].cookies;
         for (const [domain, pskeyData] of Bot[id].sig.pskeys) {
-          if (pskeyData.pskey_time > Date.now() / 1000) cookies[domain] = `uin=o${id}; skey=${cookie_data.skey}; p_uin=o${id}; p_skey=${pskeyData.p_skey}`;
+          if (pskeyData.pskey_time > Math.floor(Date.now() / 1000)) cookies[domain] = `uin=o${id}; skey=${cookie_data.skey}; p_uin=o${id}; p_skey=${pskeyData.p_skey}`;
         }
       }
       const p_skey = (await this.GetPSkey(id, domain, force)).find((i) => i.domain === domain)?.p_skey;
@@ -2434,7 +2434,7 @@ const adapter = new (class SecludedAdapter {
     if (Bot[id].sig.pskeys.size > 0) {
       const cookies = Bot[id].cookies;
       for (const [domain, pskeyData] of Bot[id].sig.pskeys) {
-        if (pskeyData.pskey_time > Date.now() / 1000) cookies[domain] = `uin=o${id}; skey=${cookie_data.skey}; p_uin=o${id}; p_skey=${pskeyData.p_skey}`;
+        if (pskeyData.pskey_time > Math.floor(Date.now() / 1000)) cookies[domain] = `uin=o${id}; skey=${cookie_data.skey}; p_uin=o${id}; p_skey=${pskeyData.p_skey}`;
       }
     }
 
@@ -2442,7 +2442,7 @@ const adapter = new (class SecludedAdapter {
       const pskey_data = {
         domain,
         p_skey,
-        pskey_time: Bot[id].sig?.pskeys?.get(domain)?.pskey_time || Date.now() / 1000 + 1800,
+        pskey_time: Bot[id].sig?.pskeys?.get(domain)?.pskey_time || (Math.floor(Date.now() / 1000) + 7200),
       };
       Bot[id].sig.pskeys.set(domain, pskey_data);
     }
@@ -2909,11 +2909,11 @@ const adapter = new (class SecludedAdapter {
     }
   }
 
-  async sendMsgtoPhone(id, msg) {
+  async sendMsgtoPhone(id, msg, isapad = false) {
     const rand = RandomUInt();
     const rets = { message_id: [], data: [], error: [] };
     let message_id,
-      seq = this.seq++,
+      seq = this.Seq++,
       time;
     const packet = {
       1: {
@@ -2923,7 +2923,7 @@ const adapter = new (class SecludedAdapter {
             1: {
               1: 1001,
               2: 0,
-              10: 2,
+              10: isapad ? 3 : 2, // 3 给pad发消息
             },
             3: {
               1: 1,
@@ -2948,7 +2948,7 @@ const adapter = new (class SecludedAdapter {
             3: 1001,
             4: 0,
             9: 1,
-            10: 2,
+            10: isapad ? 3 : 2, // 3
           },
           6: {
             1: Math.floor(Date.now() / 1000),
@@ -2976,7 +2976,7 @@ const adapter = new (class SecludedAdapter {
     time = rsp[3];
     message_id = genDmMessageId(id, seq, rand, time, 1, rsp[14]);
     rets.message_id.push(message_id);
-    const messageRet = { message_id, seq, rand, time, subSeq: rsp[14] };
+    const messageRet = { message_id, seq, rand, time, subSeq: rsp[14], msg_seq: seq };
     rets.data.push(messageRet);
     Bot.makeLog('info', `succeed to send: [Private(${id})] ` + msg, id);
     return rets;
@@ -3015,13 +3015,13 @@ const adapter = new (class SecludedAdapter {
       time = rsp[3];
       message_id = genDmMessageId(opts.user_id, seq, rand, time, 1, rsp[14]);
       rets.message_id.push(message_id);
-      const messageRet = { message_id, seq, rand, time, subSeq: rsp[14] };
+      const messageRet = { message_id, seq, rand, time, subSeq: rsp[14], msg_seq: seq };
       rets.data.push(messageRet);
       Bot.makeLog('info', `succeed to send: [Private(${opts.user_id})] ` + brief, id);
       return rets;
     } else {
       if (rsp[1] !== 0) {
-        Bot.makeLog('error', `failed to send: [Group: ${opts.id}] ${rsp[2] || '群聊消息发送失败，可能被风控'}(code:${rsp[1]})`, id);
+        Bot.makeLog('error', `failed to send: [Group: ${opts.id}] ${rsp[2] || '群聊消息发送失败，可能被禁言'}(code:${rsp[1]})`, id);
         rets.error.push({ rand });
         return rets;
       }
@@ -3352,8 +3352,10 @@ const adapter = new (class SecludedAdapter {
   }
 
   async Getuserinfo(id, uid) {
+    if (this.global_uid2uin.has(uid)) return this.global_uid2uin.get(uid);
+    if (this.global_uin2uid.has(uid)) return this.global_uin2uid.get(uid);
     const ids = [101, 102, 105, 20002, 20011, 20026, 20037, 27394, 27406, 20009, 20014];
-    const isUID = typeof uid === "string" && uid.startsWith("u_");
+    const isUID = typeof uid === 'string' && uid.startsWith('u_');
     const body = {
       1: 4065,
       2: 2,
@@ -3374,7 +3376,7 @@ const adapter = new (class SecludedAdapter {
         if (i[1] === 105) level = i[2];
         if (i[1] === 20026) regTimestamp = i[2] * 1000;
         if (i[1] === 20009) sex = Number(i[2]) === 1 ? 'male' : Number(i[2]) === 2 ? 'female' : 'unknown';
-        if (i[1] === 20009) isallow = Number(i[2]) === 1 ? true : false;
+        if (i[1] === 20014) isallow = Number(i[2]) === 1 ? true : false;
         if (i[1] === 20037) {
           const isobj = isObject(i[2]);
           age = !isobj ? i[2] : '隐藏';
@@ -3396,9 +3398,9 @@ const adapter = new (class SecludedAdapter {
         }
         if (i[1] === 101) avatarTimestamp = i[2][3] * 1000;
       }
-      return {
+      const data = {
         user_id,
-        user_uid: isUID ? uid : (this.global_uin2uid.get(uid)?.user_uid || ''),
+        user_uid: isUID ? uid : this.global_uin2uid.get(uid)?.user_uid || '',
         avatarTimestamp,
         signature,
         level,
@@ -3410,6 +3412,12 @@ const adapter = new (class SecludedAdapter {
         sex,
         isallow,
       };
+      if (isUID && !this.global_uid2uin.has(uid)) {
+        this.global_uid2uin.set(uid, data);
+      } else if (!this.global_uin2uid.has(uid) && data.user_uid !== '') {
+        this.global_uin2uid.set(uid, data);
+      }
+      return data;
     }
     return {};
   }
