@@ -27,7 +27,26 @@ import schedule from 'node-schedule';
 import { segment } from '../model/elements.js';
 import { UploadflashTransfer } from '../model/internal/UploardFlashTransfer.js';
 import sec_ws from './WebSocket.js';
+import http from 'node:http';
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 60000,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+});
 
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 60000,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+});
+
+const httpClient = axios.create({
+  httpAgent,
+  httpsAgent,
+  timeout: 60000,
+});
 const RandomUInt = () => crypto.randomBytes(4).readUInt32BE();
 const gunzip = promisify(_gunzip);
 const gzip = promisify(_gzip);
@@ -102,17 +121,26 @@ const adapter = new (class SecludedAdapter {
   }
 
   async Http_Sec_Send(data) {
-    let retry = 2,
-      wait = 400;
+    let retry = 2;
+    let wait = 400;
     while (true) {
       try {
-        const res = await axios.post(`${config.http_url}/send?token=${config.http_secretToken}`, data);
+        const res = await httpClient.post(`${config.http_url}/send?token=${config.http_secretToken}`, data);
         return res.data;
       } catch (e) {
         if (retry-- <= 0) throw e;
         await new Promise((r) => setTimeout(r, wait));
         wait *= 2.4;
       }
+    }
+  }
+
+  async Random_Send(data) {
+    const useWs = Math.random() < 0.5;
+    if (useWs) {
+      return await this.Ws_send_Sec(data);
+    } else {
+      return await this.Http_Sec_Send(data);
     }
   }
 
@@ -132,10 +160,11 @@ const adapter = new (class SecludedAdapter {
           },
         ],
       };
-    const rsp = await this.Ws_send_Sec(data.data, Seq);
+    const rsp = await this.Random_Send(data.data);
     const payload = rsp?.Dat || rsp?.[0]?.Dat || rsp?.data?.[0]?.Dat;
+    if (!payload) return {};
     if (raw) return payload;
-    if (isToJson) return pb.decode(payload)?.toJSON();
+    if (isToJson) return pb.decode(payload).toJSON();
     return pb.decode(payload);
   }
 
@@ -2690,7 +2719,7 @@ const adapter = new (class SecludedAdapter {
 
   async thumbUp(id, times = 1, user_id, opts, remain = 0, sucs = 0) {
     const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid?.get(user_id)?.user_uid || this.global_uin2uid.get(user_id)?.user_uid, Uin: String(user_id), Value: String(times) }];
-    const rsp = await this.Ws_send_Sec(data);
+    const rsp = await this.Random_Send(data);
     const suc = rsp.data[0].Value;
     if (rsp.data[0].No) {
       Bot.makeLog('warn', `[Friend: ${user_id}]点赞失败：${rsp.data[0].No}`, id);
