@@ -374,7 +374,7 @@ export class Parser {
     const titleNode = proto[3] || proto['3'];
     const listid = proto[9] ?? proto['9'];
     const authkey = proto[10] ?? proto['10'];
-    const channel = proto[19] ?? proto['19'];
+    const channel = Number(proto[19] ?? proto['19']);
     const resourceType = proto[12] ?? proto['12'];
     const voiceFlag = titleNode?.[21]?.[3] ?? titleNode?.['21']?.['3'];
     const TargetUin = this.extractTargetUin(proto?.[20] ?? proto?.['20']);

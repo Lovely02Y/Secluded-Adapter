@@ -455,7 +455,6 @@ export class ForwardMessage {
     this.parsed = parse(client, proto[3][1]);
     this.message = this.parsed.message;
     this.raw_message = this.parsed.brief;
-
     lock(this, 'proto');
     lock(this, 'parsed');
   }
