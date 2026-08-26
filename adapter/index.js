@@ -3398,7 +3398,7 @@ const adapter = new (class SecludedAdapter {
         }
         if (i[1] === 101) avatarTimestamp = i[2][3] * 1000;
       }
-      const data = {
+      const info = {
         user_id,
         user_uid: isUID ? uid : this.global_uin2uid.get(uid)?.user_uid || '',
         avatarTimestamp,
@@ -3413,11 +3413,11 @@ const adapter = new (class SecludedAdapter {
         isallow,
       };
       if (isUID && !this.global_uid2uin.has(uid)) {
-        this.global_uid2uin.set(uid, data);
-      } else if (!this.global_uin2uid.has(uid) && data.user_uid !== '') {
-        this.global_uin2uid.set(uid, data);
+        this.global_uid2uin.set(uid, info);
+      } else if (!this.global_uin2uid.has(uid) && info.user_uid !== '') {
+        this.global_uin2uid.set(uid, info);
       }
-      return data;
+      return info;
     }
     return {};
   }
