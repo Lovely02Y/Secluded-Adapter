@@ -18,15 +18,15 @@ export function ntMsgListenerdeal(payload, id) {
     // case 44:
     // case 85:
     case 82: {
-      return { type: 'message.group', payload };
+      return { type: 'message.group', proto };
     }
     //  case 529:
     case 141: {
       // 临时消息
-      return { type: 'message.friend', payload };
+      return { type: 'message.friend', proto };
     }
     case 166: {
-      return { type: 'message.friend', payload };
+      return { type: 'message.friend', proto };
     }
     case 528: {
       const uin = proto[1][1][1];
@@ -134,7 +134,7 @@ function ntPush732(proto, sub_type, id) {
       case 16:
         let group_id = parseInt(proto[1][1][1]),
           time = proto[1][2][6];
-        const payload = pb.decode(proto[1][3][2].toHex().substring(14)).toJSON();
+        const payload = pb.decode(proto[1][3][2].toHex().substring(14));
         const uid = payload[44][1][1][3][4]?.toString();
         event = {
           type: 'notice.group.reaction',
@@ -145,8 +145,8 @@ function ntPush732(proto, sub_type, id) {
           time,
           user_uid: uid,
           seq: payload[44][1][1][2][1],
-          count: payload[44][1][1][3]?.[3] || 0,
-          face_id: payload[44][1][1][3][1],
+          count: Number(payload[44][1][1][3]?.[3] || 0),
+          face_id: Number(payload[44][1][1][3][1]),
           face_type: payload[44][1][1][3][2],
           post_type: 'notice',
           notice_type: 'group',
@@ -156,7 +156,7 @@ function ntPush732(proto, sub_type, id) {
         event.user_id = event.sender?.user_id || Bot[id].uid2uin.get(uid)?.user_id;
         break;
       case 17:
-        const recall_data = pb.decode(pb.decode(proto[1][3].toHex())[2].toHex().substring(14)).toJSON();
+        const recall_data = pb.decode(pb.decode(proto[1][3].toHex())[2].toHex().substring(14));
         const user_uid = recall_data[11][3][6].toString();
         event = {
           type: 'notice.group.recall',
@@ -168,7 +168,7 @@ function ntPush732(proto, sub_type, id) {
           seq: recall_data[11][3][1],
           time: Math.floor(Date.now() / 1000),
           msg_time: recall_data[11][3][2],
-          operator_uid: recall_data[11][1], // 撤回这个消息的人
+          operator_uid: recall_data[11][1].toString(), // 撤回这个消息的人
           operate_time: recall_data[54],
           rand: recall_data[11][3][3],
           tip: recall_data[11]?.[9]?.[2] || '',
