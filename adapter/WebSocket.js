@@ -92,6 +92,10 @@ class WebSocketClient {
         let message;
         if (Buffer.isBuffer(data)) {
           message = data.toString('utf8');
+        } else if (Array.isArray(data)) {
+          // ws 分片消息：大 payload（批量推送/压缩）会以 Buffer[] 送达，必须拼接，
+          // 否则 String(data) 得到 "[object Uint8Array],..." 导致整条消息被当解析错误丢弃
+          message = Buffer.concat(data).toString('utf8');
         } else if (typeof data === 'string') {
           message = data;
         } else if (data instanceof ArrayBuffer) {
@@ -105,7 +109,15 @@ class WebSocketClient {
           if (cache) cache.resolve(parsedData);
           return;
         }
-
+        // 没有 cmd 的消息只可能是超时后迟到的响应（echo 已被删除），直接丢弃，避免误入事件流
+        if (!parsedData.cmd) {
+          Bot.makeLog('warn', `[Secluded] 丢弃无 cmd 的迟到响应 数据: ${parsedData}`, 'Secluded');
+          return;
+        }
+        if (!this.adapter) {
+          Bot.makeLog('error', `[Secluded] 适配器未就绪，丢弃事件 数据: ${parsedData}`, 'Secluded');
+          return;
+        }
         this.adapter.handleMessage(parsedData);
       } catch (error) {
         Bot.makeLog('error', [`[Secluded] 消息解析错误`, error], 'Secluded');

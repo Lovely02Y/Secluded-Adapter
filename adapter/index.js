@@ -28,6 +28,7 @@ import { segment } from '../model/elements.js';
 import { UploadflashTransfer } from '../model/internal/UploardFlashTransfer.js';
 import sec_ws from './WebSocket.js';
 import http from 'node:http';
+
 const httpAgent = new http.Agent({
   keepAlive: true,
   keepAliveMsecs: 60000,
@@ -47,10 +48,10 @@ const httpClient = axios.create({
   httpsAgent,
   timeout: 60000,
 });
+
 const RandomUInt = () => crypto.randomBytes(4).readUInt32BE();
 const gunzip = promisify(_gunzip);
 const gzip = promisify(_gzip);
-
 
 async function getImageSize(file) {
   try {
@@ -93,7 +94,7 @@ function int32ip2str(ip) {
   return [ip & 0xff, (ip >> 8) & 0xff, (ip >> 16) & 0xff, (ip >> 24) & 0xff].join('.');
 }
 
-const QQ_domains_lists = ['qun', 'aq', 'connect', 'docs', 'game', 'gamecenter', 'haoma', 'id', 'kg', 'mail', 'mma', 'office', 'openmobile', 'qqweb', 'qzone', 'ti', 'v', 'vip', 'y', 'pay', 'now', 'q', 'weiyun'].map((item) => item + '.qq.com').concat(['tenpay.com']);;
+const QQ_domains_lists = ['qun', 'aq', 'connect', 'docs', 'game', 'gamecenter', 'haoma', 'id', 'kg', 'mail', 'mma', 'office', 'openmobile', 'qqweb', 'qzone', 'ti', 'v', 'vip', 'y', 'pay', 'now', 'q', 'weiyun'].map((item) => item + '.qq.com').concat(['tenpay.com']);
 
 const adapter = new (class SecludedAdapter {
   constructor() {
@@ -113,6 +114,7 @@ const adapter = new (class SecludedAdapter {
     this.queue = []; // 等待队列
     this.global_uin2uid = new Map();
     this.global_uid2uin = new Map();
+    this._connecting = new Map(); // 账号连接去重，避免消息风暴下重复 connect
     this.config = config;
   }
 
@@ -353,7 +355,6 @@ const adapter = new (class SecludedAdapter {
     );
     return pb.decode(data);
   }
-
 
   async handleGroupsOperation(id, data) {
     let gl_count = 0;
@@ -1131,7 +1132,7 @@ const adapter = new (class SecludedAdapter {
         1: Number(group_id),
         2: {
           1: 3,
-          2: 4005,
+          2: 10012,
           3: msg,
           4: '<?xml version="1.0" encoding="utf-8"?>\n<msg templateID="1" brief="" serviceID="104"><item layout="2"><picture cover=""/><title>新人入群</title></item><source/></msg>',
           5: join_auth,
@@ -1436,6 +1437,7 @@ const adapter = new (class SecludedAdapter {
 
   pickGroup(id, group_id) {
     group_id = Number(group_id);
+    if (!Bot[id].gml.has(group_id)) this.getallMemberinfo(id, group_id);
     let data = {
       ...(Bot[id].gl?.get(group_id) || {}),
       ...(Bot[id].gml?.get(group_id)?.get(id) || {}),
@@ -1446,7 +1448,7 @@ const adapter = new (class SecludedAdapter {
       dm: false,
       group_id,
       id: group_id,
-      mlist: Bot[id].gml.get(group_id),
+      mlist: Bot[id].gml.has(group_id) ? Bot[id].gml.get(group_id) : new Map().set(id, Bot[id].info),
     };
     return {
       ...data,
@@ -2409,7 +2411,7 @@ const adapter = new (class SecludedAdapter {
     };
     const data = await this.sendUni(id, 'OidbSvcTrpcTcp.0x102a_0', pb.encode(body));
     let pskeys = data[4]?.[1];
-    if (!pskeys) return {}
+    if (!pskeys) return {};
     if (!Array.isArray(pskeys)) pskeys = [pskeys];
     for (let i of pskeys) {
       const pskey = i[2];
@@ -2471,7 +2473,7 @@ const adapter = new (class SecludedAdapter {
       const pskey_data = {
         domain,
         p_skey,
-        pskey_time: Bot[id].sig?.pskeys?.get(domain)?.pskey_time || (Math.floor(Date.now() / 1000) + 7200),
+        pskey_time: Bot[id].sig?.pskeys?.get(domain)?.pskey_time || Math.floor(Date.now() / 1000) + 7200,
       };
       Bot[id].sig.pskeys.set(domain, pskey_data);
     }
@@ -2573,7 +2575,10 @@ const adapter = new (class SecludedAdapter {
   }
 
   handleMessage(data) {
-    this.handleServerEvent(data);
+    // fire-and-forget 必须带 .catch，否则事件处理异常会变成 unhandled rejection 且无从排查
+    Promise.resolve(this.handleServerEvent(data)).catch((error) => {
+      Bot.makeLog('error', ['[Secluded] 处理服务器事件失败', error], 'Secluded');
+    });
     /*
     const echo = data.seq;
     if (echo !== undefined) {
@@ -2589,10 +2594,10 @@ const adapter = new (class SecludedAdapter {
     cache.resolve(response);
   }
 
-  handleServerEvent(event) {
+  async handleServerEvent(event) {
     switch (event.cmd) {
       case 'PushOicqMsg':
-        this.handleOicqMsg(event.data);
+        await this.handleOicqMsg(event.data);
         break;
       case 'Heartbeat':
         //this.sendHeartbeat(event);
@@ -2720,8 +2725,8 @@ const adapter = new (class SecludedAdapter {
   async thumbUp(id, times = 1, user_id, opts, remain = 0, sucs = 0) {
     const data = [{ Account: String(id), FavoriteCard: 'FavoriteCard', Uid: Bot[id].uin2uid?.get(user_id)?.user_uid || this.global_uin2uid.get(user_id)?.user_uid, Uin: String(user_id), Value: String(times) }];
     const rsp = await this.Random_Send(data);
-    const suc = rsp.data[0].Value;
-    if (rsp.data[0].No) {
+    const suc = rsp.data?.[0].Value;
+    if (rsp.data?.[0].No) {
       Bot.makeLog('warn', `[Friend: ${user_id}]点赞失败：${rsp.data[0].No}`, id);
       return false;
     }
@@ -3029,7 +3034,7 @@ const adapter = new (class SecludedAdapter {
       3: {
         1: rich,
       },
-      4: opts.dm ? seq : rand,
+      4: opts.dm ? seq : (rand + 10),
       5: rand,
       ...(opts.dm ? { 6: { 1: Math.floor(Date.now() / 1000) } } : {}),
     };
@@ -3057,15 +3062,15 @@ const adapter = new (class SecludedAdapter {
       if (rsp.checkTag(11, 12) && rsp[11] > 0) ((seq = rsp[11]), (time = rsp[3]));
       message_id = genGroupMessageId(opts.group_id, id, rsp[11], rand, rsp[3], 1, id);
       rets.message_id.push(message_id);
-      const messageRet = { message_id, seq, rand, time };
+      const messageRet = { message_id, seq, rand, time, msg_seq: (rand + 10) };
       rets.data.push(messageRet);
       Bot.makeLog('info', `succeed to send: [Group(${opts.group_id})] ` + brief, id);
       return rets;
     }
   }
 
-  async makePrivateMessage(id, payload) {
-    const raw_data = pb.decode(payload);
+  makePrivateMessage(id, payload) {
+    const raw_data = payload;
     if (!raw_data[1] || !raw_data[1]?.[3]) return false;
     let data = new PrivateMessage(id, raw_data[1], id, true);
     data.self_id = id;
@@ -3150,11 +3155,10 @@ const adapter = new (class SecludedAdapter {
     return payload?.[3] === 0;
   }
 
-  async makeGroupMessage(id, payload) {
-    const raw_data = pb.decode(payload);
+  makeGroupMessage(id, payload) {
+    const raw_data = payload;
     if (!raw_data[1] || !raw_data[1]?.[3]) return false;
     let data = new GroupMessage(id, raw_data[1], true);
-    if (!Bot[id].gml.has(data.group_id)) this.getallMemberinfo(id, data.group_id);
     ((data.self_id = id), (data.bot = Bot[id]), (data.isGroup = true));
     data.sender = {
       ...(Bot[id].gml?.get(data.group_id)?.get(data.user_id) || {}),
@@ -3237,6 +3241,7 @@ const adapter = new (class SecludedAdapter {
     if (!Bot.uin.includes(id)) await this.connect(id);
     let gml_count = 0;
     const data = pb.decode(payload)[4];
+    if (!data?.[2]) return 0;
     const list = Array.isArray(data[2]) ? data[2] : [data[2]];
     const group_id = Number(data[1]);
     const map = new Map();
@@ -3714,8 +3719,8 @@ const adapter = new (class SecludedAdapter {
       ...data,
     };
     const isallmute = data.user_id === 0 && data.duration !== 0;
-    if (isallmute) Bot[id].gl.get(data.group_id).all_muted = true;
-    if (data.user_id === id) Bot[id].gl.get(data.group_id).shutup_time_me = data.duration;
+    if (isallmute && Bot[id].gl.get(data.group_id)?.all_muted) Bot[id].gl.get(data.group_id).all_muted = true;
+    if (data.user_id === id && Bot[id].gl.get(data.group_id).shutup_time_me) Bot[id].gl.get(data.group_id).shutup_time_me = data.duration;
     Bot.em(data.type, data);
     Bot.makeLog('info', `[Group: ${data?.group_name}(${data.group_id})] ${isallmute ? `${data.operator_name}(${data.operator_id}) 开启了全体禁言` : data.user_id === 0 && data.duration === 0 ? `${data.operator_name}(${data.operator_id}) 关闭了全体禁言` : `${data.operator_name}(${data.operator_id}) 禁言了 ${data.nickname}(${data.user_id}) ${data.duration} 秒`}`, id);
   }
@@ -3740,37 +3745,57 @@ const adapter = new (class SecludedAdapter {
     send(`[${id}] ${data.title}: ${data.tip}`);
   }
 
+  /**
+   * 确保账号已连接（带并发去重）：
+   * 消息风暴下多个事件同时发现账号未连接时，只触发一次 connect，
+   * 其余事件等待同一个 Promise，避免重复拉取设备信息。
+   */
+  _ensureConnected(id) {
+    if (Bot.uin.includes(id)) return Promise.resolve();
+    if (!this._connecting.has(id)) {
+      this._connecting.set(
+        id,
+        this.connect(id)
+          .catch((error) => {
+            Bot.makeLog('error', [`[Secluded] 账号 ${id} 连接失败`, error], 'Secluded');
+          })
+          .finally(() => this._connecting.delete(id))
+      );
+    }
+    return this._connecting.get(id);
+  }
+
   async dealEvent(id, cmd, payload, seq) {
-    if (!Bot.uin.includes(id)) await this.connect(id);
+    await this._ensureConnected(id);
     switch (cmd) {
       case 'trpc.msg.olpush.OlPushService.MsgPush':
         const data = ntMsgListenerdeal(payload, id);
         if (data) data.self_id = id;
         switch (data?.type) {
           case 'message.group':
-            this.makeGroupMessage(id, payload);
+            this.makeGroupMessage(id, data.proto);
             break;
           case 'message.friend':
-            this.makePrivateMessage(id, payload);
+            this.makePrivateMessage(id, data.proto);
             break;
           case 'notice.group.increase':
-            this.makeIncrease(id, data);
+            await this.makeIncrease(id, data);
             break;
           case 'notice.group.decrease':
-            this.makedecrease(id, data);
+            await this.makedecrease(id, data);
             break;
           case 'internal.like':
-            this.internal_like(id, data);
+            await this.internal_like(id, data);
             break;
           case 'notice.group.reaction':
             if (typeof data.user_uid === 'object') return false;
             this.notice_group_reaction(id, data);
             break;
           case 'internal.qzone':
-            this.internal_qzone_v2(id, data);
+            await this.internal_qzone_v2(id, data);
             break;
           case 'internal.qzone.v2':
-            this.internal_qzone_v2(id, data);
+            await this.internal_qzone_v2(id, data);
             break;
           case 'notice.group.sign':
             this.notice_group_sign(id, data);
@@ -3792,10 +3817,10 @@ const adapter = new (class SecludedAdapter {
         }
         break;
       case 'trpc.qq_new_tech.status_svc.StatusService.KickNT':
-        const KickNT = pb.decode(payload)?.toJSON();
+        const KickNT = pb.decode(payload);
         const kick_data = {
-          title: KickNT[4],
-          tip: KickNT[3],
+          title: KickNT[4]?.toString(),
+          tip: KickNT[3]?.toString(),
           self_id: id,
           sub_id: KickNT[6],
           type: 'system.offline',
@@ -3882,15 +3907,25 @@ const adapter = new (class SecludedAdapter {
     //Bot.makeLog('info', ['接收事件', data], 'Secluded');
   }
 
-  handleOicqMsg(data) {
+  async handleOicqMsg(data) {
     data = Array.isArray(data) ? data : [data];
-    for (const i of data) {
-      if (i.Cmd && i.Dat && i.Debug === 'Debug') {
-        this.dealEvent(Number(i.Account), i.Cmd, i.Dat, Number(i.seq));
-      } else {
-        this.handleEvent(i);
-      }
-    }
+    // 全并行处理：事件自带账号信息，且消息分发路径为同步执行，不会错乱。
+    // 注意：保持 dealEvent 在 Bot.em 之前不引入真正的网络 await，否则会破坏消息顺序。
+    // 单条失败只记录日志，不阻塞其他事件（避免队头阻塞）。
+    // 禁止改回 for...of + await 逐条等待，那会重新引入队头阻塞。
+    await Promise.all(
+      data.map(async (i) => {
+        if (!(i.Cmd && i.Dat && i.Debug === 'Debug')) {
+          this.handleEvent(i);
+          return Promise.resolve();
+        }
+        try {
+          return await this.dealEvent(Number(i.Account), i.Cmd, i.Dat, Number(i.seq));
+        } catch (error) {
+          Bot.makeLog('error', [`[Secluded] 处理事件失败 Cmd: ${i.Cmd}`, error], Number(i.Account));
+        }
+      })
+    );
   }
 
   async reconnect() {
@@ -3956,7 +3991,7 @@ export class SecludedAdapter extends plugin {
         qrcode_data = await adapter.Check_Login(mid);
       }
       const img = qrcode_data.data.qrcode;
-      await this.reply(['请使用摄像头扫码完成登录', segment.image('base64://' + img)]);
+      await this.reply(['请使用摄像头扫码完成登录', segment.image('base64://' + img)], true);
       let suc = false;
       for (let n = 1; n < 30; n++) {
         await Bot.sleep(5000);
