@@ -2191,6 +2191,58 @@ const adapter = new (class SecludedAdapter {
     return [];
   }
 
+  async toapng(images, isGif, opts) {
+    const params = {
+      delay_num: 1,
+      delay_den: 10,
+      loops: 0,
+      ...opts,
+      action: 'to_apng',
+    };
+    if (isGif) {
+      params.gif = images[0];
+    } else {
+      params.frames = images;
+    }
+    const res = await fetch(`http://${config.animatedAvatar.host}:${config.animatedAvatar.ip}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    return data.apng;
+  }
+
+  async setanimatedAvatar(id, image, opts) {
+    const imageList = Array.isArray(image) ? image : [image];
+    if (imageList.length === 0) return { code: -1, msg: '无效图片数据' };
+    const isGif = imageList.length === 1;
+    const bufferList = [];
+    for (const item of imageList) {
+      const buf = await Bot.Buffer(item);
+      bufferList.push(buf.toString('hex'));
+    }
+    const apng = await this.toapng(bufferList, isGif, opts);
+    const fileDir = path.join('./data/Secluded', id.toString());
+    const filePath = path.join(fileDir, 'Bigdata.json');
+    const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+    const cachedData = JSON.parse(fileContent);
+    if (cachedData.data.length < 10) return { code: -1, msg: '无效Bigdata，请刷新再试' };
+    const params = {
+      uin: id,
+      data: apng,
+      bigdata: cachedData.data,
+      action: 'highway_upload',
+    };
+    const res = await fetch(`http://${config.animatedAvatar.host}:${config.animatedAvatar.ip}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const rsp = await res.json();
+    return rsp;
+  }
+
   async connect(id) {
     if (Bot.uin.includes(id)) return false;
     if (!this.token) this.token = await this.calculateToken(config.http_secretToken);
@@ -2263,6 +2315,7 @@ const adapter = new (class SecludedAdapter {
       getPSkey: this.GetPSkey.bind(this, id),
       GetClientKey: this.GetClientKey.bind(this, id),
       setAvatar: this.setBotAvatar.bind(this, id),
+      setanimatedAvatar: this.setanimatedAvatar.bind(this, id),
 
       getFriendArray: () => this.getFriendArray(id),
       getFriendList: () => this.getFriendList(id),
