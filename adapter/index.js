@@ -2204,7 +2204,7 @@ const adapter = new (class SecludedAdapter {
     } else {
       params.frames = images;
     }
-    const res = await fetch(`http://${config.animatedAvatar.host}:${config.animatedAvatar.ip}`, {
+    const res = await fetch(`http://${config.animatedAvatar.host}:${config.animatedAvatar.port}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -2234,7 +2234,7 @@ const adapter = new (class SecludedAdapter {
       bigdata: cachedData.data,
       action: 'highway_upload',
     };
-    const res = await fetch(`http://${config.animatedAvatar.host}:${config.animatedAvatar.ip}`, {
+    const res = await fetch(`http://${config.animatedAvatar.host}:${config.animatedAvatar.port}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
