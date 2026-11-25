@@ -4,7 +4,7 @@ Bot.adapter.push(sec.adapter);
 logger.mark(`===============`);
 logger.mark(`${logger.blue('[Secluded-Adapter]')} author 堀学长 ！！！`);
 logger.mark(`${logger.blue('[Secluded-Adapter]')} version 0.0.1`);
-logger.mark(`${logger.blue(`[Secluded-Adapter]`)} repository https://gitee.com/Milchstraber/Secluded-Plugin`);
+logger.mark(`${logger.blue(`[Secluded-Adapter]`)} repository https://github.com/Lovely02Y/Secluded-Adapter`);
 logger.mark(`===============`);
 let apps = {};
 apps[SecludedAdapter.name] = SecludedAdapter;
